@@ -1,0 +1,7 @@
+ARG branch=latest
+FROM gcr.io/evmchain/taiko-client:$branch
+
+ADD start.sh /start.sh
+RUN taiko-client -v > /version.txt
+
+ENTRYPOINT ["/start.sh"]
