@@ -102,7 +102,7 @@ func printGenesisCommand(args []string) {
 	if err != nil {
 		fatal(err)
 	}
-	block := gspec.ToBlock(nil)
+	block := gspec.ToBlock()
 	js, _ := json.MarshalIndent(block.Header(), "", "  ")
 	fmt.Println(string(js))
 }
