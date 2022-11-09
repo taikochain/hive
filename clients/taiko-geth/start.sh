@@ -70,7 +70,6 @@ echo "0x7365637265747365637265747365637265747365637265747365637265747365" >/jwts
 geth \
   --syncmode full \
   --networkid "$HIVE_TAIKO_NETWORK_ID" \
-  --bootnode "$HIVE_TAIKO_BOOTNODE" \
   --http \
   --http.addr 0.0.0.0 \
   --http.vhosts "*" \
