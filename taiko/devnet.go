@@ -116,6 +116,10 @@ func (d *Devnet) AddProtocol(ctx context.Context, opts ...hivesim.StartOption) {
 		return
 	}
 
+	opts = append(opts, hivesim.Params{
+		"HIVE_CHECK_LIVE_PORT": "0",
+	})
+
 	d.protocol = NewNode(d.clients.TaikoProtocol[0].Name, d.t, opts...)
 }
 
@@ -159,6 +163,7 @@ func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 		envTaikoL1RollupAddress:                 d.deployments.L1RollupAddress.Hex(),
 		envTaikoL2RollupAddress:                 d.deployments.L2RollupAddress.Hex(),
 		envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
+		"HIVE_CHECK_LIVE_PORT":                  "0",
 	})
 	driver := NewNode(d.clients.TaikoDriver[0].Name, d.t, driverOpts...)
 
@@ -201,6 +206,7 @@ func (d *Devnet) AddProposer(ctx context.Context, l1Idx, l2Idx int, opts ...hive
 		envTaikoProposerPrivateKey:    d.accounts.Proposer.PrivateKeyHex,
 		envTaikoSuggestedFeeRecipient: d.accounts.SuggestedFeeRecipient.Address.Hex(),
 		envTaikoProposeInterval:       d.config.ProposeInterval.String(),
+		"HIVE_CHECK_LIVE_PORT":        "0",
 	})
 	d.proposer = NewNode(d.clients.TaikoProposer[0].Name, d.t, opts...)
 }
@@ -221,6 +227,7 @@ func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesi
 		envTaikoL1RollupAddress:  d.deployments.L1RollupAddress.Hex(),
 		envTaikoL2RollupAddress:  d.deployments.L2RollupAddress.Hex(),
 		envTaikoProverPrivateKey: d.accounts.Prover.PrivateKeyHex,
+		"HIVE_CHECK_LIVE_PORT":   "0",
 	})
 	d.prover = NewNode(d.clients.TaikoProver[0].Name, d.t, opts...)
 }
