@@ -12,8 +12,8 @@ func StartTaikoDevnetWithSingleInstance(ctx context.Context, d *Devnet) error {
 	d.AddL1(ctx)
 	d.WaitUpL1(ctx, 0, 10*time.Second)
 	// deploy l1 contracts
-	d.AddProtocol(ctx)
-	d.RunDeployL1(ctx, 0)
+	d.AddProtocol(ctx, 0)
+	d.RunDeployL1(ctx)
 	// start l2
 	d.AddL2(ctx)
 	d.WaitUpL2(ctx, 0, 10*time.Second)

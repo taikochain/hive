@@ -2,7 +2,6 @@ package taiko
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -107,7 +106,7 @@ func (d *Devnet) WaitL1Block(ctx context.Context, idx int, atLeastHight uint64) 
 	return WaitBlock(ctx, d.GetL1(idx).Eth, atLeastHight)
 }
 
-func (d *Devnet) AddProtocol(ctx context.Context, opts ...hivesim.StartOption) {
+func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -115,9 +114,15 @@ func (d *Devnet) AddProtocol(ctx context.Context, opts ...hivesim.StartOption) {
 		d.t.Fatalf("no taiko protocol client types found")
 		return
 	}
-
+	l1 := d.GetL1(idx)
 	opts = append(opts, hivesim.Params{
-		"HIVE_CHECK_LIVE_PORT": "0",
+		envTaikoL1DeployerAddress:  d.accounts.L1Deployer.Address.Hex(),
+		envTaikoL2GenesisBlockHash: d.deployments.L2GenesisBlockHash.Hex(),
+		envTaikoL2RollupAddress:    d.deployments.L2RollupAddress.Hex(),
+		envTaikoMainnetUrl:         l1.HttpRpcEndpoint(),
+		envTaikoPrivateKey:         d.accounts.L1Deployer.PrivateKeyHex,
+		envTaikoL2ChainId:          d.config.L2ChainID.String(),
+		"HIVE_CHECK_LIVE_PORT":     "0",
 	})
 
 	d.protocol = NewNode(d.clients.TaikoProtocol[0].Name, d.t, opts...)
@@ -233,24 +238,11 @@ func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesi
 }
 
 // RunDeployL1 runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (d *Devnet) RunDeployL1(ctx context.Context, idx int, opts ...hivesim.StartOption) {
+func (d *Devnet) RunDeployL1(ctx context.Context, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
-	l1 := d.GetL1(idx)
-
-	result, err := d.protocol.Exec(
-		"/bin/sh", "-c",
-		fmt.Sprintf("MAINNET_URL=%s", l1.HttpRpcEndpoint()),
-		fmt.Sprintf("PRIVATE_KEY=%s", d.accounts.L1Deployer.PrivateKeyHex),
-		"npx", "hardhat", "deploy_l1",
-		"--network", "mainnet",
-		"--dao-vault", d.accounts.L1Deployer.Address.Hex(),
-		"--team-vault", d.accounts.L1Deployer.Address.Hex(),
-		"--l2-genesis-block-hash", d.deployments.L2GenesisBlockHash.Hex(),
-		"--v1-taiko-l2", d.deployments.L2RollupAddress.Hex(),
-		"--confirmations", "1",
-	)
+	result, err := d.protocol.Exec("deploy.sh")
 	if err != nil || result.ExitCode != 0 {
 		d.t.Fatalf("failed to run deploy_l1 error: %v, result: %v", err, result)
 		return
