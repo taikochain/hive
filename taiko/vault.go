@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	// simulator test account
 	VaultAddr = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
 	// This is the account that sends vault funding transactions.
 	vaultKey, _ = crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
@@ -31,8 +32,8 @@ var (
 // the genesis block. When creating a new account using NewAccoount, the account is funded by sending a
 // transaction to this contract.
 type Vault struct {
-	mu sync.Mutex
-	t  *hivesim.T
+	sync.Mutex
+	t *hivesim.T
 
 	nonce uint64 // track the nonce of the vault account
 
@@ -55,15 +56,15 @@ func (v *Vault) GenerateKey() common.Address {
 	}
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 
-	v.mu.Lock()
-	defer v.mu.Unlock()
+	v.Lock()
+	defer v.Unlock()
 	v.accounts[addr] = key
 	return addr
 }
 
 func (v *Vault) FindKey(addr common.Address) *ecdsa.PrivateKey {
-	v.mu.Lock()
-	defer v.mu.Unlock()
+	v.Lock()
+	defer v.Unlock()
 	return v.accounts[addr]
 }
 
@@ -87,6 +88,7 @@ func (v *Vault) CreateAccount(ctx context.Context, client *ethclient.Client, amo
 		v.t.Fatalf("unable to send funding transaction: %w", err)
 	}
 
+	// wait for receipt until timeout
 	for i := 0; i < 60; i++ {
 		receipt, err := client.TransactionReceipt(ctx, tx.Hash())
 		if err != nil && !errors.Is(err, ethereum.NotFound) {
@@ -104,8 +106,9 @@ func (v *Vault) CreateAccount(ctx context.Context, client *ethclient.Client, amo
 func (v *Vault) InsertKey(key *ecdsa.PrivateKey) {
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 
-	v.mu.Lock()
-	defer v.mu.Unlock()
+	v.Lock()
+	defer v.Unlock()
+
 	v.accounts[addr] = key
 }
 
@@ -140,8 +143,8 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 
 // nextNonce generates the nonce of a funding transaction.
 func (v *Vault) nextNonce() uint64 {
-	v.mu.Lock()
-	defer v.mu.Unlock()
+	v.Lock()
+	defer v.Unlock()
 
 	nonce := v.nonce
 	v.nonce++
