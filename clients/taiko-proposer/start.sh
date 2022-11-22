@@ -61,16 +61,29 @@
 #  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
 #  - HIVE_TAIKO_L1_CLIQUE_PERIOD                     l1 clique period
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
+#  - HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL      if set then produce invalid blocks
 set -e
 
-taiko-client proposer \
-  --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-  --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-  --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-  --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-  --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
-  --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
-  --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
-  --verbosity 4 \
-  --produceInvalidBlocks \
-  --produceInvalidBlocksInterval 50
+if [ "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL" != "" ]; then
+  taiko-client proposer \
+    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+    --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
+    --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
+    --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
+    --verbosity 4 \
+    --produceInvalidBlocks \
+    --produceInvalidBlocksInterval "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
+else
+  taiko-client proposer \
+    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+    --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
+    --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
+    --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
+    --verbosity 4
+fi

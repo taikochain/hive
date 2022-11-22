@@ -2,11 +2,18 @@ package taiko
 
 import (
 	"context"
+	"strconv"
 	"time"
+
+	"github.com/ethereum/hive/hivesim"
 )
 
+type PipelineParams struct {
+	ProduceInvalidBlocksInterval uint64
+}
+
 // StartTaikoDevnetWithSingleInstance each component runs only one instance
-func StartTaikoDevnetWithSingleInstance(ctx context.Context, d *Devnet) error {
+func StartTaikoDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *PipelineParams) error {
 	d.Init()
 	// start l1 node
 	d.AddL1(ctx)
@@ -18,7 +25,13 @@ func StartTaikoDevnetWithSingleInstance(ctx context.Context, d *Devnet) error {
 	d.AddL2(ctx)
 	d.WaitUpL2(ctx, 0, 10*time.Second)
 	// add components
-	d.AddProposer(ctx, 0, 0)
+	if params != nil && params.ProduceInvalidBlocksInterval != 0 {
+		d.AddProposer(ctx, 0, 0, hivesim.Params{
+			envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(params.ProduceInvalidBlocksInterval, 10),
+		})
+	} else {
+		d.AddProposer(ctx, 0, 0)
+	}
 	d.AddProver(ctx, 0, 0)
 	// init bindings for tests
 	d.InitBindingsL1(0)
