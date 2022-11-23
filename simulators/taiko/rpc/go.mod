@@ -2,10 +2,6 @@ module github.com/ethereum/hive/simulators/taiko/rpc
 
 go 1.18
 
-replace github.com/ethereum/go-ethereum v1.10.25 => github.com/taikochain/taiko-geth v0.0.0-20221019033350-df3ec74ee5ab
-
-replace github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1 => github.com/taikochain/hive v0.0.0-20220727121216-02ad57aaf9c1
-
 require (
 	github.com/ethereum/go-ethereum v1.10.25
 	github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1
@@ -65,4 +61,9 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+replace (
+	github.com/ethereum/go-ethereum v1.10.25 => github.com/taikochain/taiko-geth v0.0.0-20221019033350-df3ec74ee5ab
+	github.com/ethereum/hive => ../../../
 )
