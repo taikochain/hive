@@ -29,6 +29,7 @@ const (
 	envTaikoProposerPrivateKey              = "HIVE_TAIKO_PROPOSER_PRIVATE_KEY"
 	envTaikoSuggestedFeeRecipient           = "HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT"
 	envTaikoProposeInterval                 = "HIVE_TAIKO_PROPOSE_INTERVAL"
+	envTaikoProduceInvalidBlocksInterval    = "HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
 	envTaikoThrowawayBlockBuilderPrivateKey = "HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
 	envTaikoL1ChainId                       = "HIVE_TAIKO_L1_CHAIN_ID"
 	envTaikoL1CliquePeriod                  = "HIVE_TAIKO_L1_CLIQUE_PERIOD"
