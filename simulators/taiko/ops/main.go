@@ -16,7 +16,7 @@ import (
 // 4. driver sync from some none zero height
 func main() {
 	suite := hivesim.Suite{
-		Name:        "tiako ops",
+		Name:        "taiko ops",
 		Description: "Test propose, sync and other things",
 	}
 
