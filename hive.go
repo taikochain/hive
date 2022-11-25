@@ -111,8 +111,6 @@ func main() {
 	runner := libhive.NewRunner(inv, builder, cb)
 	clientList := splitAndTrim(*clients, ",")
 
-	// clientList = addTaiko(clientList)
-
 	// 1. build images
 	if err := runner.Build(ctx, clientList, simList); err != nil {
 		fatal(err)
