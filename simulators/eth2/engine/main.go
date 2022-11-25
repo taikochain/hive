@@ -55,9 +55,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// classify by "beacon" "validator" "eth1"
 	c := ClientsByRole(clientTypes)
-	// each type of client must only have one instance
 	if len(c.Eth1) != 1 {
 		panic("choose 1 eth1 client type")
 	}
