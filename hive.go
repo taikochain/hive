@@ -111,7 +111,7 @@ func main() {
 	runner := libhive.NewRunner(inv, builder, cb)
 	clientList := splitAndTrim(*clients, ",")
 
-	clientList = addTaiko(clientList)
+	// clientList = addTaiko(clientList)
 
 	// 1. build images
 	if err := runner.Build(ctx, clientList, simList); err != nil {
@@ -153,9 +153,4 @@ func splitAndTrim(input, sep string) []string {
 		list[i] = strings.TrimSpace(list[i])
 	}
 	return list
-}
-
-// addTaiko add taiko components to the client list
-func addTaiko(clientList []string) []string {
-	return append(clientList, "taiko-geth", "taiko-driver", "taiko-proposer", "taiko-protocol", "taiko-prover")
 }
