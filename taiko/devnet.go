@@ -30,8 +30,9 @@ type Devnet struct {
 	l1s      []*Node // L1 nodes
 	l2s      []*L2   // L2 nodes
 	protocol *Node   // protocol client, todo:
-	proposer *Node   // proposer client
-	prover   *Node   // prover client
+	// TODO(alex): multi proposer and prover
+	proposer *Node // proposer client
+	prover   *Node // prover client
 
 	L1Vault *Vault // l1 vault
 	L2Vault *Vault // l2 vault

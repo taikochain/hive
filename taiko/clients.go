@@ -18,7 +18,7 @@ type ClientsByRole struct {
 	TaikoDriver   []*hivesim.ClientDefinition
 	TaikoProposer []*hivesim.ClientDefinition
 	TaikoProver   []*hivesim.ClientDefinition
-	TaikoProtocol []*hivesim.ClientDefinition
+	TaikoProtocol []*hivesim.ClientDefinition // TODO(alex): just one taiko-protocol instance?
 }
 
 func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {

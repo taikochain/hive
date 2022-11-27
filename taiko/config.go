@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// TODO(alex): split these config
 type Config struct {
 	L1ChainID       *big.Int
 	L2ChainID       *big.Int

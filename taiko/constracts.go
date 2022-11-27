@@ -2,6 +2,7 @@ package taiko
 
 import "github.com/ethereum/go-ethereum/common"
 
+// TODO(alex): split two structs
 type Deployments struct {
 	// rollup contract address
 	L1RollupAddress common.Address
