@@ -25,19 +25,19 @@ type Devnet struct {
 	sync.Mutex
 
 	t       *hivesim.T
-	clients *Clients
+	clients *ClientsByRole
 
-	l1s []*Node // L1 nodes
-	l2s []*L2   // L2 nodes
-
-	protocol *Node // protocol client
-	proposer *Node // proposer client
-	prover   *Node // prover client
+	l1s      []*Node // L1 nodes
+	l2s      []*L2   // L2 nodes
+	protocol *Node   // protocol client, todo:
+	proposer *Node   // proposer client
+	prover   *Node   // prover client
 
 	L1Vault *Vault // l1 vault
 	L2Vault *Vault // l2 vault
 
-	accounts    *Accounts    // all accounts will be used in the network
+	accounts *Accounts // all accounts will be used in the network
+
 	deployments *Deployments // contracts deployment info
 	bindings    *Bindings    // bindings of contracts
 
@@ -50,14 +50,15 @@ func NewDevnet(t *hivesim.T) *Devnet {
 		t.Fatalf("failed to retrieve list of client types: %v", err)
 	}
 
-	clients := NewClients(clientTypes)
-	t.Logf("creating devnet with clients: %s", clients)
+	roles := Roles(clientTypes)
+	t.Logf("creating devnet with roles: %s", roles)
 	return &Devnet{
 		t:       t,
-		clients: clients,
+		clients: roles,
 
-		L1Vault:     NewVault(t, DefaultConfig.L1ChainID),
-		L2Vault:     NewVault(t, DefaultConfig.L2ChainID),
+		L1Vault: NewVault(t, DefaultConfig.L1ChainID),
+		L2Vault: NewVault(t, DefaultConfig.L2ChainID),
+
 		accounts:    DefaultAccounts(t),
 		deployments: DefaultDeployments,
 		config:      DefaultConfig,

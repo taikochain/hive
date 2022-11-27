@@ -11,8 +11,8 @@ const (
 	taikoProtocol = "taiko-protocol"
 )
 
-// Clients is a collection of ClientDefinitions, grouped by role.
-type Clients struct {
+// ClientsByRole is a collection of ClientDefinitions, grouped by role.
+type ClientsByRole struct {
 	L1            []*hivesim.ClientDefinition
 	TaikoGeth     []*hivesim.ClientDefinition
 	TaikoDriver   []*hivesim.ClientDefinition
@@ -21,8 +21,8 @@ type Clients struct {
 	TaikoProtocol []*hivesim.ClientDefinition
 }
 
-func NewClients(clientDefs []*hivesim.ClientDefinition) *Clients {
-	var out Clients
+func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
+	var out ClientsByRole
 	for _, client := range clientDefs {
 		if client.HasRole(taikoL1) {
 			out.L1 = append(out.L1, client)

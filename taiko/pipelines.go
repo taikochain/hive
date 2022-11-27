@@ -12,8 +12,8 @@ type PipelineParams struct {
 	ProduceInvalidBlocksInterval uint64
 }
 
-// StartTaikoDevnetWithSingleInstance each component runs only one instance
-func StartTaikoDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *PipelineParams) error {
+// StartDevnetWithSingleInstance each component runs only one instance
+func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *PipelineParams) error {
 	d.Init()
 	// start l1 node
 	d.AddL1(ctx)
