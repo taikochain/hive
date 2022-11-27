@@ -23,26 +23,35 @@ func WaitUp(ctx context.Context, t *hivesim.T, cli *ethclient.Client, timeout ti
 	}
 }
 
-func WaitBlock(ctx context.Context, cli *ethclient.Client, atLeastHight uint64) error {
+func WaitBlock(ctx context.Context, client *ethclient.Client, n uint64) error {
 	for {
-		height, err := cli.BlockNumber(ctx)
+		height, err := client.BlockNumber(ctx)
 		if err != nil {
 			return err
 		}
-		if height < atLeastHight {
+		if height < n {
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 		break
 	}
+
 	return nil
 }
 
-func WaitReceipt(ctx context.Context, cli *ethclient.Client, hash common.Hash, status uint64) (*types.Receipt, error) {
+func WaitReceiptOK(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, client, hash, types.ReceiptStatusSuccessful)
+}
+
+func WaitReceiptFail(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, client, hash, types.ReceiptStatusFailed)
+}
+
+func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash, status uint64) (*types.Receipt, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		receipt, err := cli.TransactionReceipt(ctx, hash)
+		receipt, err := client.TransactionReceipt(ctx, hash)
 		if errors.Is(err, ethereum.NotFound) {
 			select {
 			case <-ctx.Done():
@@ -59,12 +68,4 @@ func WaitReceipt(ctx context.Context, cli *ethclient.Client, hash common.Hash, s
 		}
 		return receipt, nil
 	}
-}
-
-func WaitReceiptOK(ctx context.Context, cli *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, cli, hash, types.ReceiptStatusSuccessful)
-}
-
-func WaitReceiptFail(ctx context.Context, cli *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, cli, hash, types.ReceiptStatusFailed)
 }

@@ -105,9 +105,9 @@ func runAllTests(t *hivesim.T) {
 			Run: func(t *hivesim.T, env *taiko.TestEnv) {
 				switch test.Name[:strings.IndexByte(test.Name, '/')] {
 				case "http":
-					RunHTTP(t, l2.Geth, d.L2Vault, genesis, test.Run)
+					RunHTTP(t, l2.Geth.Client, d.L2Vault, genesis, test.Run)
 				case "ws":
-					RunWS(t, l2.Geth, d.L2Vault, genesis, test.Run)
+					RunWS(t, l2.Geth.Client, d.L2Vault, genesis, test.Run)
 				default:
 					panic("bad test prefix in name " + test.Name)
 				}

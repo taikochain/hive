@@ -12,8 +12,8 @@ import (
 
 // L2 combines the taiko geth and taiko driver
 type L2 struct {
-	Geth   *Node
-	Driver *Node
+	Geth   *ELNode
+	Driver *DriverNode
 }
 
 func (l2 *L2) Genesis() *core.Genesis {
@@ -27,12 +27,12 @@ type Devnet struct {
 	t       *hivesim.T
 	clients *ClientsByRole
 
-	l1s      []*Node // L1 nodes
-	l2s      []*L2   // L2 nodes
-	contract *Node   // protocol client
+	l1s      []*ELNode     // L1 nodes
+	l2s      []*L2         // L2 nodes
+	contract *ContractNode // contracts deploy client
 	// TODO(alex): multi proposer and prover
-	proposer *Node // proposer client
-	prover   *Node // prover client
+	proposer *ProposerNode // proposer client
+	prover   *ProverNode   // prover client
 
 	L1Vault *Vault // l1 vault
 	L2Vault *Vault // l2 vault
@@ -83,10 +83,10 @@ func (d *Devnet) AddL1(ctx context.Context, opts ...hivesim.StartOption) {
 		envTaikoL1ChainId:      d.config.L1ChainID.String(),
 		envTaikoL1CliquePeriod: strconv.FormatUint(d.config.L1MineInterval, 10),
 	})
-	d.l1s = append(d.l1s, NewNode(d.clients.L1[0].Name, d.t, opts...))
+	d.l1s = append(d.l1s, &ELNode{d.t.StartClient(d.clients.L1[0].Name, opts...)})
 }
 
-func (d *Devnet) GetL1(idx int) *Node {
+func (d *Devnet) GetL1(idx int) *ELNode {
 	if idx < 0 || idx >= len(d.l1s) {
 		d.t.Fatalf("only have %d l1 nodes, cannot find %d", len(d.l1s), idx)
 		return nil
@@ -98,14 +98,14 @@ func (d *Devnet) WaitUpL1(ctx context.Context, idx int, timeout time.Duration) {
 	d.Lock()
 	defer d.Unlock()
 
-	WaitUp(ctx, d.t, d.GetL1(idx).Eth, timeout)
+	WaitUp(ctx, d.t, d.GetL1(idx).EthClient(), timeout)
 }
 
 func (d *Devnet) WaitL1Block(ctx context.Context, idx int, atLeastHight uint64) error {
 	d.Lock()
 	defer d.Unlock()
 
-	return WaitBlock(ctx, d.GetL1(idx).Eth, atLeastHight)
+	return WaitBlock(ctx, d.GetL1(idx).EthClient(), atLeastHight)
 }
 
 func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.StartOption) {
@@ -127,7 +127,7 @@ func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.Start
 		"HIVE_CHECK_LIVE_PORT":     "0",
 	})
 
-	d.contract = NewNode(d.clients.Contract.Name, d.t, opts...)
+	d.contract = &ContractNode{d.t.StartClient(d.clients.Contract.Name, opts...)}
 }
 
 func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
@@ -160,7 +160,7 @@ func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 			envTaikoBootNode: enodeURL,
 		})
 	}
-	geth := NewNode(d.clients.L2[0].Name, d.t, gethOpts...)
+	geth := &ELNode{d.t.StartClient(d.clients.L2[0].Name, gethOpts...)}
 	// start taiko-driver
 	l1 := d.GetL1(0)
 	driverOpts := append(opts, hivesim.Params{
@@ -172,7 +172,7 @@ func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 		envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 		"HIVE_CHECK_LIVE_PORT":                  "0",
 	})
-	driver := NewNode(d.clients.Driver[0].Name, d.t, driverOpts...)
+	driver := &DriverNode{d.t.StartClient(d.clients.Driver[0].Name, driverOpts...)}
 
 	d.l2s = append(d.l2s, &L2{
 		Geth:   geth,
@@ -192,7 +192,7 @@ func (d *Devnet) WaitUpL2(ctx context.Context, idx int, timeout time.Duration) {
 	d.Lock()
 	defer d.Unlock()
 
-	WaitUp(ctx, d.t, d.GetL2(idx).Geth.Eth, timeout)
+	WaitUp(ctx, d.t, d.GetL2(idx).Geth.EthClient(), timeout)
 }
 
 func (d *Devnet) AddProposer(ctx context.Context, l1Idx, l2Idx int, opts ...hivesim.StartOption) {
@@ -215,7 +215,7 @@ func (d *Devnet) AddProposer(ctx context.Context, l1Idx, l2Idx int, opts ...hive
 		envTaikoProposeInterval:       d.config.ProposeInterval.String(),
 		"HIVE_CHECK_LIVE_PORT":        "0",
 	})
-	d.proposer = NewNode(d.clients.Proposer[0].Name, d.t, opts...)
+	d.proposer = &ProposerNode{d.t.StartClient(d.clients.Proposer[0].Name, opts...)}
 }
 
 func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesim.StartOption) {
@@ -236,7 +236,7 @@ func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesi
 		envTaikoProverPrivateKey: d.accounts.Prover.PrivateKeyHex,
 		"HIVE_CHECK_LIVE_PORT":   "0",
 	})
-	d.prover = NewNode(d.clients.Prover[0].Name, d.t, opts...)
+	d.prover = &ProverNode{d.t.StartClient(d.clients.Prover[0].Name, opts...)}
 }
 
 // RunDeployL1 runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
@@ -249,4 +249,35 @@ func (d *Devnet) RunDeployL1(ctx context.Context, opts ...hivesim.StartOption) {
 		d.t.Fatalf("failed to run deploy_l1 error: %v, result: %v", err, result)
 		return
 	}
+}
+
+type PipelineParams struct {
+	ProduceInvalidBlocksInterval uint64
+}
+
+// StartDevnetWithSingleInstance each component runs only one instance
+func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *PipelineParams) error {
+	d.Init()
+	// start l1 node
+	d.AddL1(ctx)
+	d.WaitUpL1(ctx, 0, 10*time.Second)
+	// deploy l1 contracts
+	d.AddProtocol(ctx, 0)
+	d.RunDeployL1(ctx)
+	// start l2
+	d.AddL2(ctx)
+	d.WaitUpL2(ctx, 0, 10*time.Second)
+	// add components
+	if params != nil && params.ProduceInvalidBlocksInterval != 0 {
+		d.AddProposer(ctx, 0, 0, hivesim.Params{
+			envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(params.ProduceInvalidBlocksInterval, 10),
+		})
+	} else {
+		d.AddProposer(ctx, 0, 0)
+	}
+	d.AddProver(ctx, 0, 0)
+	// init bindings for tests
+	d.InitBindingsL1(0)
+	d.InitBindingsL2(0)
+	return d.WaitL1Block(ctx, 0, 2)
 }
