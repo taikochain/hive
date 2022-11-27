@@ -13,12 +13,12 @@ const (
 
 // ClientsByRole is a collection of ClientDefinitions, grouped by role.
 type ClientsByRole struct {
-	L1            []*hivesim.ClientDefinition
-	TaikoGeth     []*hivesim.ClientDefinition
-	TaikoDriver   []*hivesim.ClientDefinition
-	TaikoProposer []*hivesim.ClientDefinition
-	TaikoProver   []*hivesim.ClientDefinition
-	TaikoProtocol []*hivesim.ClientDefinition // TODO(alex): just one taiko-protocol instance?
+	L1       []*hivesim.ClientDefinition
+	L2       []*hivesim.ClientDefinition
+	Driver   []*hivesim.ClientDefinition
+	Proposer []*hivesim.ClientDefinition
+	Prover   []*hivesim.ClientDefinition
+	Contract []*hivesim.ClientDefinition // TODO(alex): just one taiko-protocol instance?
 }
 
 func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
@@ -28,19 +28,19 @@ func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
 			out.L1 = append(out.L1, client)
 		}
 		if client.HasRole(taikoDriver) {
-			out.TaikoDriver = append(out.TaikoDriver, client)
+			out.Driver = append(out.Driver, client)
 		}
 		if client.HasRole(taikoGeth) {
-			out.TaikoGeth = append(out.TaikoGeth, client)
+			out.L2 = append(out.L2, client)
 		}
 		if client.HasRole(taikoProposer) {
-			out.TaikoProposer = append(out.TaikoProposer, client)
+			out.Proposer = append(out.Proposer, client)
 		}
 		if client.HasRole(taikoProver) {
-			out.TaikoProver = append(out.TaikoProver, client)
+			out.Prover = append(out.Prover, client)
 		}
 		if client.HasRole(taikoProtocol) {
-			out.TaikoProtocol = append(out.TaikoProtocol, client)
+			out.Contract = append(out.Contract, client)
 		}
 	}
 	return &out

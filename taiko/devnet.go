@@ -29,7 +29,7 @@ type Devnet struct {
 
 	l1s      []*Node // L1 nodes
 	l2s      []*L2   // L2 nodes
-	protocol *Node   // protocol client, todo:
+	contract *Node   // protocol client
 	// TODO(alex): multi proposer and prover
 	proposer *Node // proposer client
 	prover   *Node // prover client
@@ -112,7 +112,7 @@ func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.Start
 	d.Lock()
 	defer d.Unlock()
 
-	if len(d.clients.TaikoProtocol) == 0 {
+	if len(d.clients.Contract) == 0 {
 		d.t.Fatalf("no taiko protocol client types found")
 		return
 	}
@@ -127,19 +127,19 @@ func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.Start
 		"HIVE_CHECK_LIVE_PORT":     "0",
 	})
 
-	d.protocol = NewNode(d.clients.TaikoProtocol[0].Name, d.t, opts...)
+	d.contract = NewNode(d.clients.Contract[0].Name, d.t, opts...)
 }
 
 func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
-	if len(d.clients.TaikoGeth) == 0 {
+	if len(d.clients.L2) == 0 {
 		d.t.Fatal("no taiko geth client types found")
 		return
 	}
 
-	if len(d.clients.TaikoDriver) == 0 {
+	if len(d.clients.Driver) == 0 {
 		d.t.Fatal("no taiko driver client types found")
 		return
 	}
@@ -160,7 +160,7 @@ func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 			envTaikoBootNode: enodeURL,
 		})
 	}
-	geth := NewNode(d.clients.TaikoGeth[0].Name, d.t, gethOpts...)
+	geth := NewNode(d.clients.L2[0].Name, d.t, gethOpts...)
 	// start taiko-driver
 	l1 := d.GetL1(0)
 	driverOpts := append(opts, hivesim.Params{
@@ -172,7 +172,7 @@ func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
 		envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 		"HIVE_CHECK_LIVE_PORT":                  "0",
 	})
-	driver := NewNode(d.clients.TaikoDriver[0].Name, d.t, driverOpts...)
+	driver := NewNode(d.clients.Driver[0].Name, d.t, driverOpts...)
 
 	d.l2s = append(d.l2s, &L2{
 		Geth:   geth,
@@ -199,7 +199,7 @@ func (d *Devnet) AddProposer(ctx context.Context, l1Idx, l2Idx int, opts ...hive
 	d.Lock()
 	defer d.Unlock()
 
-	if len(d.clients.TaikoProposer) == 0 {
+	if len(d.clients.Proposer) == 0 {
 		d.t.Fatalf("no taiko proposer client types found")
 		return
 	}
@@ -215,14 +215,14 @@ func (d *Devnet) AddProposer(ctx context.Context, l1Idx, l2Idx int, opts ...hive
 		envTaikoProposeInterval:       d.config.ProposeInterval.String(),
 		"HIVE_CHECK_LIVE_PORT":        "0",
 	})
-	d.proposer = NewNode(d.clients.TaikoProposer[0].Name, d.t, opts...)
+	d.proposer = NewNode(d.clients.Proposer[0].Name, d.t, opts...)
 }
 
 func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
-	if len(d.clients.TaikoProver) == 0 {
+	if len(d.clients.Prover) == 0 {
 		d.t.Fatalf("no taiko prover client types found")
 		return
 	}
@@ -236,7 +236,7 @@ func (d *Devnet) AddProver(ctx context.Context, l1Idx, l2Idx int, opts ...hivesi
 		envTaikoProverPrivateKey: d.accounts.Prover.PrivateKeyHex,
 		"HIVE_CHECK_LIVE_PORT":   "0",
 	})
-	d.prover = NewNode(d.clients.TaikoProver[0].Name, d.t, opts...)
+	d.prover = NewNode(d.clients.Prover[0].Name, d.t, opts...)
 }
 
 // RunDeployL1 runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
@@ -244,7 +244,7 @@ func (d *Devnet) RunDeployL1(ctx context.Context, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
-	result, err := d.protocol.Exec("deploy.sh")
+	result, err := d.contract.Exec("deploy.sh")
 	if err != nil || result.ExitCode != 0 {
 		d.t.Fatalf("failed to run deploy_l1 error: %v, result: %v", err, result)
 		return
