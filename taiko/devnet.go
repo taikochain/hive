@@ -112,7 +112,7 @@ func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.Start
 	d.Lock()
 	defer d.Unlock()
 
-	if len(d.clients.Contract) == 0 {
+	if d.clients.Contract == nil {
 		d.t.Fatalf("no taiko protocol client types found")
 		return
 	}
@@ -127,7 +127,7 @@ func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.Start
 		"HIVE_CHECK_LIVE_PORT":     "0",
 	})
 
-	d.contract = NewNode(d.clients.Contract[0].Name, d.t, opts...)
+	d.contract = NewNode(d.clients.Contract.Name, d.t, opts...)
 }
 
 func (d *Devnet) AddL2(ctx context.Context, opts ...hivesim.StartOption) {
