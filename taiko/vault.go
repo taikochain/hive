@@ -9,18 +9,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
-	// simulator test account
 	VaultAddr = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
 	// This is the account that sends vault funding transactions.
 	vaultKey, _ = crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
@@ -28,17 +28,22 @@ var (
 	vaultTxConfirmationCount = uint64(1)
 )
 
-// Vault creates accounts for testing and funds them. An instance of the Vault contract is deployed in
-// the genesis block. When creating a new account using NewAccoount, the account is funded by sending a
-// transaction to this contract.
+// Vault creates accounts for testing and funds them. An instance of the Vault contract is
+// deployed in the genesis block. When creating a new account using CreateAccount, the
+// account is funded by sending a transaction to this contract.
+//
+// The purpose of the vault is allowing tests to run concurrently without worrying about
+// nonce assignment and unexpected balance changes.
 type Vault struct {
-	sync.Mutex
-	t *hivesim.T
+	t       *hivesim.T
+	chainID *big.Int
 
-	nonce uint64 // track the nonce of the vault account
-
-	chainID  *big.Int
+	// This tracks the account nonce of the vault account.
+	nonce uint64
+	// Created accounts are tracked in this map.
 	accounts map[common.Address]*ecdsa.PrivateKey
+
+	mu sync.Mutex
 }
 
 func NewVault(t *hivesim.T, chainID *big.Int) *Vault {
@@ -49,66 +54,72 @@ func NewVault(t *hivesim.T, chainID *big.Int) *Vault {
 	}
 }
 
+// GenerateKey creates a new account key and stores it.
 func (v *Vault) GenerateKey() common.Address {
 	key, err := crypto.GenerateKey()
 	if err != nil {
-		panic(fmt.Errorf("can't generate account key: %w", err))
+		panic(fmt.Errorf("can'T generate account key: %v", err))
 	}
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 
-	v.Lock()
-	defer v.Unlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	v.accounts[addr] = key
 	return addr
 }
 
+// FindKey returns the private key for an address.
 func (v *Vault) FindKey(addr common.Address) *ecdsa.PrivateKey {
-	v.Lock()
-	defer v.Unlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	return v.accounts[addr]
 }
 
+// SignTransaction signs the given transaction with the test account and returns it.
+// It uses the EIP155 signing rules.
 func (v *Vault) SignTransaction(sender common.Address, tx *types.Transaction) (*types.Transaction, error) {
 	key := v.FindKey(sender)
 	if key == nil {
-		return nil, fmt.Errorf("can't find private key for account %v", sender)
+		return nil, fmt.Errorf("sender account %v not in vault", sender)
 	}
 	signer := types.LatestSignerForChainID(v.chainID)
 	return types.SignTx(tx, signer, key)
 }
 
+// CreateAccount creates a new account that is funded from the vault contract.
+// It will panic when the account could not be created and funded.
 func (v *Vault) CreateAccount(ctx context.Context, client *ethclient.Client, amount *big.Int) common.Address {
 	if amount == nil {
-		amount = big.NewInt(0)
+		amount = new(big.Int)
 	}
-	addr := v.GenerateKey()
+	address := v.GenerateKey()
 
-	tx := v.makeFundingTx(addr, amount)
+	// order the vault to send some ether
+	tx := v.makeFundingTx(address, amount)
 	if err := client.SendTransaction(ctx, tx); err != nil {
-		v.t.Fatalf("unable to send funding transaction: %w", err)
+		v.t.Fatalf("unable to send funding transaction: %v", err)
 	}
 
-	// wait for receipt until timeout
 	for i := 0; i < 60; i++ {
 		receipt, err := client.TransactionReceipt(ctx, tx.Hash())
 		if err != nil && !errors.Is(err, ethereum.NotFound) {
-			v.t.Fatalf("error getting transaction receipt", err)
+			v.t.Fatal("error getting transaction receipt:", err)
 		}
 		if receipt != nil {
-			return addr
+			return address
 		}
 		time.Sleep(time.Second)
 	}
-	v.t.Fatal("timeout getting transaction receipt")
+
+	v.t.Fatal("timed out getting transaction receipt")
 	return common.Address{}
 }
 
 func (v *Vault) InsertKey(key *ecdsa.PrivateKey) {
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 
-	v.Lock()
-	defer v.Unlock()
-
+	v.mu.Lock()
+	defer v.mu.Unlock()
 	v.accounts[addr] = key
 }
 
@@ -129,7 +140,7 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 		Nonce:     nonce,
 		Gas:       gasLimit,
 		GasTipCap: big.NewInt(1 * params.GWei),
-		GasFeeCap: big.NewInt(30 * params.GWei),
+		GasFeeCap: gasPrice,
 		To:        &recipient,
 		Value:     amount,
 	})
@@ -143,8 +154,8 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 
 // nextNonce generates the nonce of a funding transaction.
 func (v *Vault) nextNonce() uint64 {
-	v.Lock()
-	defer v.Unlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
 	nonce := v.nonce
 	v.nonce++
