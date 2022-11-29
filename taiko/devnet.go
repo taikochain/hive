@@ -108,7 +108,7 @@ func (d *Devnet) WaitL1Block(ctx context.Context, idx int, atLeastHight uint64) 
 	return WaitBlock(ctx, d.GetL1(idx).EthClient(), atLeastHight)
 }
 
-func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.StartOption) {
+func (d *Devnet) AddContract(ctx context.Context, idx int, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -262,7 +262,7 @@ func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *Pipel
 	d.AddL1(ctx)
 	d.WaitUpL1(ctx, 0, 10*time.Second)
 	// deploy l1 contracts
-	d.AddProtocol(ctx, 0)
+	d.AddContract(ctx, 0)
 	d.RunDeployL1(ctx)
 	// start l2
 	d.AddL2(ctx)
