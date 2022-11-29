@@ -21,9 +21,9 @@ import (
 )
 
 var (
-	VaultAddr = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+	VaultAddr = common.HexToAddress("0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39")
 	// This is the account that sends vault funding transactions.
-	vaultKey, _ = crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	vaultKey, _ = crypto.HexToECDSA("2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200")
 	// Number of blocks to wait before funding tx is considered valid.
 	vaultTxConfirmationCount = uint64(1)
 )
@@ -149,6 +149,15 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 	if err != nil {
 		v.t.Fatal("can'T sign vault funding tx:", err)
 	}
+	// for testing
+	from, err := types.Sender(signer, signedTx)
+	if err != nil {
+		v.t.Fatal("error:1:%v", err)
+	}
+	if from != VaultAddr {
+		v.t.Fatal("error:2:chainID=%v,from=%v,%v", v.chainID, from, VaultAddr)
+	}
+	// end testing
 	return signedTx
 }
 
