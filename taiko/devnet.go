@@ -2,7 +2,9 @@ package taiko
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
@@ -61,8 +63,16 @@ func NewDevnet(t *hivesim.T) *Devnet {
 		accounts:    DefaultAccounts(t),
 		deployments: DefaultDeployments,
 		config:      DefaultConfig,
-		L1Cfg:       nil, // TODO(alex): parse genesis from json file
+		L1Cfg:       new(core.Genesis),
 		L2Cfg:       core.TaikoGenesisBlock(DefaultConfig.L2NetworkID),
+	}
+
+	data, err := ioutil.ReadFile("/genesis.json")
+	if err != nil {
+		d.t.Fatal("can not read l1 genesis file", "err", err)
+	}
+	if err := json.Unmarshal(data, d.L1Cfg); err != nil {
+		d.t.Fatal("can not load l1 genesis", "err", err)
 	}
 	d.L1Vault = NewVault(t, d.L1Cfg.Config)
 	d.L2Vault = NewVault(t, d.L2Cfg.Config)
