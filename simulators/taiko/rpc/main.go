@@ -93,8 +93,7 @@ func runAllTests(t *hivesim.T) {
 
 	d := taiko.NewDevnet(t)
 	require.NoError(t, taiko.StartDevnetWithSingleInstance(ctx, d, nil))
-	l2 := d.GetL2(0)
-	genesis := d.Genesis()
+	l2 := d.GetL2ELNode(0)
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.
 	adaptedTests := make([]*taiko.TestSpec, len(tests))
@@ -105,9 +104,9 @@ func runAllTests(t *hivesim.T) {
 			Run: func(t *hivesim.T, env *taiko.TestEnv) {
 				switch test.Name[:strings.IndexByte(test.Name, '/')] {
 				case "http":
-					RunHTTP(t, l2.Geth.Client, d.L2Vault, genesis, test.Run)
+					RunHTTP(t, l2.Client, d.L2Vault, d.L2Cfg, test.Run)
 				case "ws":
-					RunWS(t, l2.Geth.Client, d.L2Vault, genesis, test.Run)
+					RunWS(t, l2.Client, d.L2Vault, d.L2Cfg, test.Run)
 				default:
 					panic("bad test prefix in name " + test.Name)
 				}

@@ -21,7 +21,7 @@ type ClientsByRole struct {
 	Contract *hivesim.ClientDefinition
 }
 
-func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
+func Roles(t *hivesim.T, clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
 	var out ClientsByRole
 	for _, client := range clientDefs {
 		if client.HasRole(taikoL1) {
@@ -42,6 +42,17 @@ func Roles(clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
 		if client.HasRole(taikoProtocol) {
 			out.Contract = client
 		}
+	}
+
+	l2Num, driverNum := len(out.L2), len(out.Driver)
+	if l2Num == 0 {
+		t.Fatal("no taiko geth client types found")
+	}
+	if driverNum == 0 {
+		t.Fatal("no taiko driver client types found")
+	}
+	if l2Num != driverNum {
+		t.Fatal("taiko geth node does not match driver node")
 	}
 	return &out
 }

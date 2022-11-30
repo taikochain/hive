@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -13,14 +14,20 @@ import (
 	"github.com/ethereum/hive/hivesim"
 )
 
-func WaitUp(ctx context.Context, t *hivesim.T, cli *ethclient.Client, timeout time.Duration) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	_, err := cli.ChainID(ctx)
-	if err != nil {
-		t.Fatalf("cannot wait for node: %w", err)
+func WaitELNodesUp(ctx context.Context, t *hivesim.T, nodes []*ELNode, timeout time.Duration) {
+	var wg sync.WaitGroup
+	for i, n := range nodes {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			if _, err := n.EthClient().ChainID(ctx); err != nil {
+				t.Fatalf("engine node %s_%d should be up within %v,err=%v", n.Type, i, timeout, err)
+			}
+		}()
 	}
+	wg.Wait()
 }
 
 func WaitBlock(ctx context.Context, client *ethclient.Client, n uint64) error {
