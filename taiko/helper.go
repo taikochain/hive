@@ -18,14 +18,14 @@ func WaitELNodesUp(ctx context.Context, t *hivesim.T, nodes []*ELNode, timeout t
 	var wg sync.WaitGroup
 	for i, n := range nodes {
 		wg.Add(1)
-		go func() {
+		go func(i int, node *ELNode) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 			if _, err := n.EthClient().ChainID(ctx); err != nil {
-				t.Fatalf("engine node %s_%d should be up within %v,err=%v", n.Type, i, timeout, err)
+				t.Fatalf("engine node %s_%d should be up within %v,err=%v", node.Type, i, timeout, err)
 			}
-		}()
+		}(i, n)
 	}
 	wg.Wait()
 }

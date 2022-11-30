@@ -3,7 +3,6 @@ package taiko
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"sync"
@@ -55,7 +54,6 @@ func NewDevnet(t *hivesim.T) *Devnet {
 	}
 
 	roles := Roles(t, clientTypes)
-	t.Logf("creating devnet with roles: %s", roles)
 	d := &Devnet{
 		t:       t,
 		clients: roles,
@@ -69,10 +67,10 @@ func NewDevnet(t *hivesim.T) *Devnet {
 
 	data, err := ioutil.ReadFile("/genesis.json")
 	if err != nil {
-		d.t.Fatal("can not read l1 genesis file", "err", err)
+		d.t.Fatalf("can not read l1 genesis file, err=%v", err)
 	}
 	if err := json.Unmarshal(data, d.L1Cfg); err != nil {
-		d.t.Fatal("can not load l1 genesis", "err", err)
+		d.t.Fatalf("can not load l1 genesis, err=%v", err)
 	}
 	d.L1Vault = NewVault(t, d.L1Cfg.Config)
 	d.L2Vault = NewVault(t, d.L2Cfg.Config)
@@ -96,9 +94,8 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 		envTaikoL1CliquePeriod: strconv.FormatUint(d.config.L1MineInterval, 10),
 	})
 
-	for i, c := range d.clients.L1 {
-		name := fmt.Sprintf("%s:%d", c.Name, i)
-		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(name, opts...)})
+	for _, c := range d.clients.L1 {
+		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...)})
 	}
 	WaitELNodesUp(ctx, d.t, d.l1Engines, 10*time.Second)
 }
@@ -125,7 +122,6 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 		envTaikoNetworkId: strconv.FormatUint(d.config.L2NetworkID, 10),
 	})
 	for i, c := range d.clients.L2 {
-		name := fmt.Sprintf("%s:%d", c.Name, i)
 		if i > 0 {
 			l2 := d.GetL2ELNode(0)
 			enodeURL, err := l2.EnodeURL()
@@ -136,7 +132,7 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 				envTaikoBootNode: enodeURL,
 			})
 		}
-		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(name, gethOpts...)})
+		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, gethOpts...)})
 	}
 	WaitELNodesUp(ctx, d.t, d.l2Engines, 10*time.Second)
 }
@@ -146,7 +142,6 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 	defer d.Unlock()
 
 	for i, c := range d.clients.Driver {
-		name := fmt.Sprintf("%s:%d", c.Name, i)
 		l2Node := d.GetL2ELNode(i)
 		// start taiko-driver
 		l1 := d.GetL1ELNode(0)
@@ -159,7 +154,7 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
 		})
-		d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(name, driverOpts...)})
+		d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, driverOpts...)})
 	}
 }
 
@@ -178,7 +173,7 @@ func (d *Devnet) StartProposerNodes(ctx context.Context, params *PipelineParams)
 	if len(d.clients.Proposer) == 0 {
 		d.t.Fatalf("no taiko proposer client types found")
 	}
-	for i, n := range d.clients.Proposer {
+	for i, c := range d.clients.Proposer {
 		l1 := d.GetL1ELNode(i % len(d.l1Engines))
 		l2 := d.GetL2ELNode(i % len(d.l2Engines))
 		var opts []hivesim.StartOption
@@ -198,7 +193,7 @@ func (d *Devnet) StartProposerNodes(ctx context.Context, params *PipelineParams)
 				envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(params.ProduceInvalidBlocksInterval, 10),
 			})
 		}
-		d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(n.Name, opts...)})
+		d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
 	}
 }
 
@@ -210,7 +205,7 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 		d.t.Fatalf("no taiko prover client types found")
 		return
 	}
-	for i, n := range d.clients.Prover {
+	for i, c := range d.clients.Prover {
 		l1 := d.GetL1ELNode(i % len(d.l1Engines))
 		l2 := d.GetL2ELNode(i % len(d.l2Engines))
 		var opts []hivesim.StartOption
@@ -222,7 +217,7 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 			envTaikoProverPrivateKey: d.accounts.Prover.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":   "0",
 		})
-		d.provers = append(d.provers, &ProverNode{d.t.StartClient(n.Name, opts...)})
+		d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
 	}
 
 }

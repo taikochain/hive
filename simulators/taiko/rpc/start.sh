@@ -64,6 +64,6 @@
 
 set -e
 
-cat /genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/$HIVE_TAIKO_L1_CHAIN_ID/g" /genesis.json
-cat /genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/$HIVE_TAIKO_L1_CLIQUE_PERIOD/g" /genesis.json
+cat /genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/1336/g" /genesis.json
+cat /genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/0/g" /genesis.json
 
