@@ -19,7 +19,7 @@ type Config struct {
 
 var DefaultConfig = &Config{
 	L1ChainID:       big.NewInt(1336),
-	L2ChainID:       big.NewInt(167),
+	L2ChainID:       big.NewInt(167001), // this may be caused by a bug
 	L1NetworkID:     31336,
 	L2NetworkID:     167001,
 	L1MineInterval:  0,
