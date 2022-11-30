@@ -16,10 +16,6 @@ type L2 struct {
 	Driver *DriverNode
 }
 
-func (l2 *L2) Genesis() *core.Genesis {
-	return core.TaikoGenesisBlock()
-}
-
 // Devnet is a taiko network with all necessary components, e.g. l1, l2, driver, proposer, prover etc.
 type Devnet struct {
 	sync.Mutex
@@ -66,6 +62,10 @@ func NewDevnet(t *hivesim.T) *Devnet {
 	}
 }
 
+func (d *Devnet) Genesis() *core.Genesis {
+	return core.TaikoGenesisBlock(d.config.L2ChainID.Uint64())
+}
+
 // Init initializes the network
 func (d *Devnet) Init() {
 }
@@ -108,7 +108,7 @@ func (d *Devnet) WaitL1Block(ctx context.Context, idx int, atLeastHight uint64) 
 	return WaitBlock(ctx, d.GetL1(idx).EthClient(), atLeastHight)
 }
 
-func (d *Devnet) AddProtocol(ctx context.Context, idx int, opts ...hivesim.StartOption) {
+func (d *Devnet) AddContract(ctx context.Context, idx int, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -262,7 +262,7 @@ func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *Pipel
 	d.AddL1(ctx)
 	d.WaitUpL1(ctx, 0, 10*time.Second)
 	// deploy l1 contracts
-	d.AddProtocol(ctx, 0)
+	d.AddContract(ctx, 0)
 	d.RunDeployL1(ctx)
 	// start l2
 	d.AddL2(ctx)

@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 
 	"github.com/ethereum/go-ethereum"
@@ -21,9 +20,9 @@ import (
 )
 
 var (
-	VaultAddr = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+	VaultAddr = common.HexToAddress("0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39")
 	// This is the account that sends vault funding transactions.
-	vaultKey, _ = crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	vaultKey, _ = crypto.HexToECDSA("2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200")
 	// Number of blocks to wait before funding tx is considered valid.
 	vaultTxConfirmationCount = uint64(1)
 )
@@ -82,7 +81,7 @@ func (v *Vault) SignTransaction(sender common.Address, tx *types.Transaction) (*
 	if key == nil {
 		return nil, fmt.Errorf("sender account %v not in vault", sender)
 	}
-	signer := types.LatestSignerForChainID(v.chainID)
+	signer := types.NewEIP155Signer(v.chainID)
 	return types.SignTx(tx, signer, key)
 }
 
@@ -136,15 +135,14 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 		nonce    = v.nextNonce()
 		gasLimit = uint64(75000)
 	)
-	tx := types.NewTx(&types.DynamicFeeTx{
-		Nonce:     nonce,
-		Gas:       gasLimit,
-		GasTipCap: big.NewInt(1 * params.GWei),
-		GasFeeCap: gasPrice,
-		To:        &recipient,
-		Value:     amount,
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    nonce,
+		Gas:      gasLimit,
+		GasPrice: big.NewInt(1),
+		To:       &recipient,
+		Value:    amount,
 	})
-	signer := types.LatestSignerForChainID(v.chainID)
+	signer := types.NewEIP155Signer(v.chainID)
 	signedTx, err := types.SignTx(tx, signer, vaultKey)
 	if err != nil {
 		v.t.Fatal("can'T sign vault funding tx:", err)

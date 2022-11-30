@@ -94,7 +94,7 @@ func runAllTests(t *hivesim.T) {
 	d := taiko.NewDevnet(t)
 	require.NoError(t, taiko.StartDevnetWithSingleInstance(ctx, d, nil))
 	l2 := d.GetL2(0)
-	genesis := l2.Genesis()
+	genesis := d.Genesis()
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.
 	adaptedTests := make([]*taiko.TestSpec, len(tests))

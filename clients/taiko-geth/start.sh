@@ -68,7 +68,7 @@ set -e
 echo "0x7365637265747365637265747365637265747365637265747365637265747365" >/jwtsecret
 
 geth \
-  --syncmode full \
+  --nodiscover  \
   --networkid "$HIVE_TAIKO_NETWORK_ID" \
   --http \
   --http.addr 0.0.0.0 \
