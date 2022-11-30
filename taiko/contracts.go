@@ -27,7 +27,7 @@ var (
 		L2BridgeAddress:    common.HexToAddress("0xcBECCC94C76EDb11aAb917cb4eD6D633DA84C176"),
 		L1VaultAddress:     common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
 		L2VaultAddress:     common.HexToAddress("0x2B754E21D363B4005eF7e7679F3B2D140B4B00Fc"),
-		L2GenesisBlockHash: common.HexToHash("0xc0c66b2db9d0bb035c6fa956e81daa5c2cdeee6de9dce85d55865a6be45957e5"),
+		L2GenesisBlockHash: common.HexToHash("0xe76a69b167bb118c79ed3be2dd2073b300acd4861e31a603c7677186b42372a5"),
 		// TODO: update these addresses
 		L1TestERC20Address: common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		L2TestERC20Address: common.HexToAddress("0x0000000000000000000000000000000000000000"),

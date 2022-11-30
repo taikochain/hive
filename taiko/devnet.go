@@ -261,7 +261,6 @@ func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *Pipel
 	d.StartL1ELNodes(ctx)
 	d.StartL2ELNodes(ctx)
 	d.DeployL1Contracts(ctx)
-	// TODO(alex):deploy l2 contracts
 	d.StartProposerNodes(ctx, params)
 	d.StartDriverNodes(ctx)
 
