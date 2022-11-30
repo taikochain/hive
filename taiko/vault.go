@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 
 	"github.com/ethereum/go-ethereum"
@@ -81,7 +82,7 @@ func (v *Vault) SignTransaction(sender common.Address, tx *types.Transaction) (*
 	if key == nil {
 		return nil, fmt.Errorf("sender account %v not in vault", sender)
 	}
-	signer := types.NewEIP155Signer(v.chainID)
+	signer := types.LatestSignerForChainID(v.chainID)
 	return types.SignTx(tx, signer, key)
 }
 
@@ -135,14 +136,15 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 		nonce    = v.nextNonce()
 		gasLimit = uint64(75000)
 	)
-	tx := types.NewTx(&types.LegacyTx{
-		Nonce:    nonce,
-		Gas:      gasLimit,
-		GasPrice: big.NewInt(1),
-		To:       &recipient,
-		Value:    amount,
+	tx := types.NewTx(&types.DynamicFeeTx{
+		Nonce:     nonce,
+		Gas:       gasLimit,
+		GasTipCap: big.NewInt(1 * params.GWei),
+		GasFeeCap: gasPrice,
+		To:        &recipient,
+		Value:     amount,
 	})
-	signer := types.NewEIP155Signer(v.chainID)
+	signer := types.LatestSignerForChainID(v.chainID)
 	signedTx, err := types.SignTx(tx, signer, vaultKey)
 	if err != nil {
 		v.t.Fatal("can'T sign vault funding tx:", err)
