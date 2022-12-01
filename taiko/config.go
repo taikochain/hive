@@ -24,8 +24,8 @@ var DefaultConfig = &Config{
 	L2ChainID:       params.TaikoAlpha1NetworkID,
 	L1NetworkID:     31336,
 	L2NetworkID:     params.TaikoAlpha1NetworkID.Uint64(),
-	L1MineInterval:  0,
+	L1MineInterval:  1,
 	TaikoClientTag:  "latest",
 	TaikoGethTag:    "taiko",
-	ProposeInterval: time.Second,
+	ProposeInterval: 30 * time.Second,
 }

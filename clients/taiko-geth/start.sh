@@ -83,4 +83,5 @@ geth \
   --allow-insecure-unlock \
   --http.api admin,debug,eth,net,web3,txpool,miner,taiko \
   --ws.api admin,debug,eth,net,web3,txpool,miner,taiko \
+  --verbosity $HIVE_LOGLEVEL \
   --taiko

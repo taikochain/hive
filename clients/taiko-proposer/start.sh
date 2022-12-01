@@ -73,7 +73,7 @@ if [ "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL" != "" ]; then
     --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
     --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
     --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
-    --verbosity 4 \
+    --verbosity $HIVE_LOGLEVEL \
     --produceInvalidBlocks \
     --produceInvalidBlocksInterval "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
 else
@@ -85,5 +85,5 @@ else
     --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
     --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
     --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
-    --verbosity 4
+    --verbosity $HIVE_LOGLEVEL
 fi

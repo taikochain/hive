@@ -76,7 +76,7 @@ geth \
   --exec 'personal.importRawKey("'2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200'", null)' console
 
 geth \
-  --nodiscover \
+  --gcmode archive \
   --networkid 1336 \
   --http \
   --http.addr 0.0.0.0 \

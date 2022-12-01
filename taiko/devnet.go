@@ -108,17 +108,10 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	return d.l1Engines[idx]
 }
 
-func (d *Devnet) WaitL1Block(ctx context.Context, idx int, atLeastHight uint64) error {
-	d.Lock()
-	defer d.Unlock()
-
-	return WaitBlock(ctx, d.GetL1ELNode(idx).EthClient(), atLeastHight)
-}
-
 func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
-	gethOpts := append(opts, hivesim.Params{
+	opts = append(opts, hivesim.Params{
 		envTaikoNetworkId: strconv.FormatUint(d.config.L2NetworkID, 10),
 	})
 	for i, c := range d.clients.L2 {
@@ -128,11 +121,11 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 			if err != nil {
 				d.t.Fatalf("failed to get enode url of the first taiko geth node, error: %w", err)
 			}
-			gethOpts = append(gethOpts, hivesim.Params{
+			opts = append(opts, hivesim.Params{
 				envTaikoBootNode: enodeURL,
 			})
 		}
-		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, gethOpts...)})
+		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...)})
 	}
 	WaitELNodesUp(ctx, d.t, d.l2Engines, 10*time.Second)
 }
@@ -261,12 +254,14 @@ func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *Pipel
 	d.StartL1ELNodes(ctx)
 	d.StartL2ELNodes(ctx)
 	d.DeployL1Contracts(ctx)
-	d.StartProposerNodes(ctx, params)
 	d.StartDriverNodes(ctx)
-
 	d.StartProverNodes(ctx)
+	d.StartProposerNodes(ctx, params)
+
 	// init bindings for tests
 	d.InitBindingsL1(0)
 	d.InitBindingsL2(0)
-	return d.WaitL1Block(ctx, 0, 2)
+
+	//
+	return WaitBlock(ctx, d.GetL1ELNode(0).EthClient(), 2)
 }
