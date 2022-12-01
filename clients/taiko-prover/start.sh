@@ -72,5 +72,5 @@ taiko-client prover \
   --zkevmRpcdEndpoint ws://127.0.0.1:18545 \
   --zkevmRpcdParamsPath 12345 \
   --l1.proverPrivKey "$HIVE_TAIKO_PROVER_PRIVATE_KEY" \
-  --verbosity $HIVE_LOGLEVEL \
+  --verbosity 4 \
   --dummy

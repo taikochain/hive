@@ -27,7 +27,7 @@ func (e *ELNode) HttpRpcEndpoint() string {
 }
 
 func (e *ELNode) EngineEndpoint() string {
-	return fmt.Sprintf("ws://%v:%d", e.IP, enginePort)
+	return fmt.Sprintf("http://%v:%d", e.IP, enginePort)
 }
 
 func (e *ELNode) WsRpcEndpoint() string {

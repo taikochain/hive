@@ -151,7 +151,8 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
 		})
-		d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, o...)})
+		c := d.t.StartClient(c.Name, o...)
+		d.drivers = append(d.drivers, &DriverNode{c})
 	}
 }
 
