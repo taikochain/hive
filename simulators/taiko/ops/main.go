@@ -46,7 +46,7 @@ func testProposeBadBlocks(t *hivesim.T) {
 	defer cancel()
 
 	d := taiko.NewDevnet(t)
-	require.NoError(t, taiko.StartDevnetWithSingleInstance(ctx, d, nil))
+	require.NoError(t, taiko.StartSingleNodeDevnet(ctx, d, nil))
 	l2 := d.GetL2ELNode(0)
 	// taiko.WaitBlock(ctx, l2.EthClient(), 1)
 	address := d.L2Vault.CreateAccount(context.Background(), l2.EthClient(), big.NewInt(params.Ether))

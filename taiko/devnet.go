@@ -4,12 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"math/big"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
+	"github.com/taikoxyz/taiko-client/bindings"
+	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
 // L2 combines the taiko geth and taiko driver
@@ -103,7 +109,6 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	if idx < 0 || idx >= len(d.l1Engines) {
 		d.t.Fatalf("only have %d l1 nodes, cannot find %d", len(d.l1Engines), idx)
-		return nil
 	}
 	return d.l1Engines[idx]
 }
@@ -116,7 +121,7 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 	})
 	for i, c := range d.clients.L2 {
 		if i > 0 {
-			l2 := d.GetL2ELNode(0)
+			l2 := d.GetL2ELNode(i - 1)
 			enodeURL, err := l2.EnodeURL()
 			if err != nil {
 				d.t.Fatalf("failed to get enode url of the first taiko geth node, error: %w", err)
@@ -135,19 +140,18 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 	defer d.Unlock()
 
 	for i, c := range d.clients.Driver {
-		l2Node := d.GetL2ELNode(i)
-		// start taiko-driver
-		l1 := d.GetL1ELNode(0)
-		driverOpts := append(opts, hivesim.Params{
+		l1 := d.GetL1ELNode(i % len(d.l1Engines))
+		l2 := d.GetL2ELNode(i)
+		o := append(opts, hivesim.Params{
 			envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
-			envTaikoL2RPCEndpoint:                   l2Node.WsRpcEndpoint(),
-			envTaikoL2EngineEndpoint:                l2Node.EngineEndpoint(),
+			envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
+			envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
 			envTaikoL1RollupAddress:                 d.deployments.L1RollupAddress.Hex(),
 			envTaikoL2RollupAddress:                 d.deployments.L2RollupAddress.Hex(),
 			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
 		})
-		d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, driverOpts...)})
+		d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, o...)})
 	}
 }
 
@@ -201,6 +205,10 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 	for i, c := range d.clients.Prover {
 		l1 := d.GetL1ELNode(i % len(d.l1Engines))
 		l2 := d.GetL2ELNode(i % len(d.l2Engines))
+
+		if err := d.addWhitelist(ctx, l1.EthClient()); err != nil {
+			d.t.Fatalf("add whitelist failed, err=%v", err)
+		}
 		var opts []hivesim.StartOption
 		opts = append(opts, hivesim.Params{
 			envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
@@ -213,6 +221,35 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 		d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
 	}
 
+}
+
+func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error {
+	taikoL1, err := bindings.NewTaikoL1Client(d.deployments.L1RollupAddress, cli)
+	if err != nil {
+		return err
+	}
+	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.config.L1ChainID)
+	if err != nil {
+		return err
+	}
+	opts.GasTipCap = big.NewInt(1500000000)
+	tx, err := taikoL1.WhitelistProver(opts, d.accounts.Prover.Address, true)
+	if err != nil {
+		return err
+	}
+
+	receipt, err := rpc.WaitReceipt(ctx, cli, tx)
+	if err != nil {
+		return err
+	}
+
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		d.t.Fatal("Failed to commit transactions list", "txHash", receipt.TxHash)
+	}
+
+	d.t.Log("Add prover to whitelist finished", "height", receipt.BlockNumber)
+
+	return nil
 }
 
 // DeployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
@@ -240,7 +277,7 @@ func (d *Devnet) DeployL1Contracts(ctx context.Context, opts ...hivesim.StartOpt
 			d.t.Fatalf("failed to deploy contract on engine node %d(%s), error: %v, result: %v",
 				i, e.Container, err, result)
 		}
-		d.t.Sim.StopClient(d.t.SuiteID, d.t.TestID, n.Container)
+		d.t.Logf("Deploy contracts on %s %s(%s)", e.Type, e.Container, e.IP)
 	}
 }
 
@@ -248,8 +285,8 @@ type PipelineParams struct {
 	ProduceInvalidBlocksInterval uint64
 }
 
-// StartDevnetWithSingleInstance each component runs only one instance
-func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *PipelineParams) error {
+// StartSingleNodeDevnet each component runs only one instance
+func StartSingleNodeDevnet(ctx context.Context, d *Devnet, params *PipelineParams) error {
 	d.Init()
 	d.StartL1ELNodes(ctx)
 	d.StartL2ELNodes(ctx)
@@ -262,6 +299,5 @@ func StartDevnetWithSingleInstance(ctx context.Context, d *Devnet, params *Pipel
 	d.InitBindingsL1(0)
 	d.InitBindingsL2(0)
 
-	//
 	return WaitBlock(ctx, d.GetL1ELNode(0).EthClient(), 2)
 }

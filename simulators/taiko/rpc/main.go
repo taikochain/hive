@@ -92,7 +92,7 @@ func runAllTests(t *hivesim.T) {
 	defer cancel()
 
 	d := taiko.NewDevnet(t)
-	require.NoError(t, taiko.StartDevnetWithSingleInstance(ctx, d, nil))
+	require.NoError(t, taiko.StartSingleNodeDevnet(ctx, d, nil))
 	l2 := d.GetL2ELNode(0)
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.

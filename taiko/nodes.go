@@ -31,7 +31,7 @@ func (e *ELNode) EngineEndpoint() string {
 }
 
 func (e *ELNode) WsRpcEndpoint() string {
-	// carried over from older mergenet ws connection problems, idk why clients are different
+	// carried over from older merge net ws connection problems, idk why clients are different
 	switch e.Client.Type {
 	case "besu":
 		return fmt.Sprintf("ws://%v:%d/ws", e.IP, wsRPCPort)

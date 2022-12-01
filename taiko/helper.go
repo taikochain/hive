@@ -22,7 +22,7 @@ func WaitELNodesUp(ctx context.Context, t *hivesim.T, nodes []*ELNode, timeout t
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			if _, err := n.EthClient().ChainID(ctx); err != nil {
+			if _, err := node.EthClient().ChainID(ctx); err != nil {
 				t.Fatalf("engine node %s_%d should be up within %v,err=%v", node.Type, i, timeout, err)
 			}
 		}(i, n)
