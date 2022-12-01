@@ -143,6 +143,7 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 		l1 := d.GetL1ELNode(i % len(d.l1Engines))
 		l2 := d.GetL2ELNode(i)
 		o := append(opts, hivesim.Params{
+			envTaikoRole:                            taikoDriver,
 			envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
 			envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
@@ -176,6 +177,7 @@ func (d *Devnet) StartProposerNodes(ctx context.Context, params *PipelineParams)
 		l2 := d.GetL2ELNode(i % len(d.l2Engines))
 		var opts []hivesim.StartOption
 		opts = append(opts, hivesim.Params{
+			envTaikoRole:                  taikoProposer,
 			envTaikoL1RPCEndpoint:         l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:         l2.WsRpcEndpoint(),
 			envTaikoL1RollupAddress:       d.deployments.L1RollupAddress.Hex(),
@@ -212,6 +214,7 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 		}
 		var opts []hivesim.StartOption
 		opts = append(opts, hivesim.Params{
+			envTaikoRole:             taikoProver,
 			envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:    l2.WsRpcEndpoint(),
 			envTaikoL1RollupAddress:  d.deployments.L1RollupAddress.Hex(),

@@ -49,6 +49,7 @@
 #
 #  - HIVE_TAIKO_NETWORK_ID                           network ID number to use for the taiko protocol
 #  - HIVE_TAIKO_BOOTNODE                             enode URL of the remote bootstrap node for l2 node
+#  - HIVE_TAIKO_ROLE                                 role of node
 #  - HIVE_TAIKO_L1_RPC_ENDPOINT                      rpc endpoint of the l1 node
 #  - HIVE_TAIKO_L2_RPC_ENDPOINT                      rpc endpoint of the l2 node
 #  - HIVE_TAIKO_L2_ENGINE_ENDPOINT                   engine endpoint of the l2 node
@@ -62,17 +63,58 @@
 #  - HIVE_TAIKO_L1_CLIQUE_PERIOD                     l1 clique period
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
 
-# Immediately abort the script on any error encountered
 set -e
 
-echo "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7" >/jwtsecret
+echo "start $HIVE_TAIKO_ROLE ..."
 
-taiko-client driver \
-  --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-  --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-  --l2.engine "$HIVE_TAIKO_L2_ENGINE_ENDPOINT" \
-  --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-  --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-  --l2.throwawayBlockBuilderPrivKey "$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY" \
-  --jwtSecret /jwtsecret \
-  --verbosity 4
+case $HIVE_TAIKO_ROLE in
+"taiko-driver")
+  echo "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7" >/jwtsecret
+  taiko-client driver \
+    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+    --l2.engine "$HIVE_TAIKO_L2_ENGINE_ENDPOINT" \
+    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+    --l2.throwawayBlockBuilderPrivKey "$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY" \
+    --jwtSecret /jwtsecret \
+    --verbosity 4
+  ;;
+"taiko-prover")
+  taiko-client prover \
+    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+    --zkevmRpcdEndpoint ws://127.0.0.1:18545 \
+    --zkevmRpcdParamsPath 12345 \
+    --l1.proverPrivKey "$HIVE_TAIKO_PROVER_PRIVATE_KEY" \
+    --verbosity 4 \
+    --dummy
+  ;;
+"taiko-proposer")
+  if [ "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL" != "" ]; then
+    taiko-client proposer \
+      --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+      --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+      --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+      --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+      --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
+      --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
+      --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
+      --verbosity $HIVE_LOGLEVEL \
+      --produceInvalidBlocks \
+      --produceInvalidBlocksInterval "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
+  else
+    taiko-client proposer \
+      --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
+      --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
+      --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
+      --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
+      --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
+      --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
+      --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
+      --verbosity $HIVE_LOGLEVEL
+  fi
+  ;;
+esac

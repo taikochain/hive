@@ -21,6 +21,7 @@ package taiko
 const (
 	envTaikoNetworkId                       = "HIVE_TAIKO_NETWORK_ID"
 	envTaikoBootNode                        = "HIVE_TAIKO_BOOTNODE"
+	envTaikoRole                            = "HIVE_TAIKO_ROLE"
 	envTaikoL1RPCEndpoint                   = "HIVE_TAIKO_L1_RPC_ENDPOINT"
 	envTaikoL2RPCEndpoint                   = "HIVE_TAIKO_L2_RPC_ENDPOINT"
 	envTaikoL2EngineEndpoint                = "HIVE_TAIKO_L2_ENGINE_ENDPOINT"
