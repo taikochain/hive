@@ -1,4 +1,4 @@
-ARG branch=main
+ARG branch=lastest
 FROM gcr.io/evmchain/taiko-client:$branch
 
 ADD start.sh /start.sh
