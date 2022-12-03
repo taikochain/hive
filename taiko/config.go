@@ -7,27 +7,43 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// TODO(alex): split these config
-type Config struct {
-	L1ChainID       *big.Int
-	L2ChainID       *big.Int
-	L1NetworkID     uint64
-	L2NetworkID     uint64
-	L1MineInterval  uint64
-	TaikoClientTag  string
-	TaikoGethTag    string
-	ProposeInterval time.Duration
-	JWTSecret       string
+type L1Config struct {
+	ChainID      *big.Int
+	NetworkID    uint64
+	MineInterval uint64
 }
 
-var DefaultConfig = &Config{
-	L1ChainID:       big.NewInt(1336),
-	L2ChainID:       params.TaikoAlpha1NetworkID,
-	L1NetworkID:     31336,
-	L2NetworkID:     params.TaikoAlpha1NetworkID.Uint64(),
-	L1MineInterval:  1,
-	TaikoClientTag:  "latest",
-	TaikoGethTag:    "taiko",
-	ProposeInterval: 30 * time.Second,
-	JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
+type L2Config struct {
+	ChainID                      *big.Int
+	NetworkID                    uint64
+	ProduceInvalidBlocksInterval uint64
+	ProposeInterval              time.Duration
+	JWTSecret                    string
+}
+
+type RollupConfig struct {
+	L1 *L1Config
+	L2 *L2Config
+}
+
+var DefaultRollupConfig = &RollupConfig{
+	L1: &L1Config{
+		ChainID:      big.NewInt(1336),
+		NetworkID:    31336,
+		MineInterval: 1,
+	},
+	L2: &L2Config{
+		ChainID:         params.TaikoAlpha1NetworkID,
+		NetworkID:       params.TaikoAlpha1NetworkID.Uint64(),
+		ProposeInterval: 30 * time.Second,
+		JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
+	},
+}
+
+type DevnetConfig struct {
+	L1EngineCnt uint64
+	L2EngineCnt uint64
+	DriverCnt   uint64
+	ProposerCnt uint64
+	ProverCnt   uint64
 }

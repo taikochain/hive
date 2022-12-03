@@ -18,16 +18,9 @@ import (
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
-// L2 combines the taiko geth and taiko driver
-type L2 struct {
-	Geth   *ELNode
-	Driver *DriverNode
-}
-
 // Devnet is a taiko network with all necessary components, e.g. l1, l2, driver, proposer, prover etc.
 type Devnet struct {
 	sync.Mutex
-
 	t       *hivesim.T
 	clients *ClientsByRole
 
@@ -45,46 +38,63 @@ type Devnet struct {
 	accounts *Accounts // all accounts will be used in the network
 
 	deployments *Deployments // contracts deployment info
-	bindings    *Bindings    // bindings of contracts
 
-	L1Cfg *core.Genesis
-	L2Cfg *core.Genesis
+	L1Genesis *core.Genesis
+	L2Genesis *core.Genesis
 
-	config *Config // network config
+	rollupConf *RollupConfig // network config
+	conf       *DevnetConfig
 }
 
-func NewDevnet(t *hivesim.T) *Devnet {
-	clientTypes, err := t.Sim.ClientTypes()
-	if err != nil {
-		t.Fatalf("failed to retrieve list of client types: %v", err)
-	}
-
-	roles := Roles(t, clientTypes)
+func NewDevnet(t *hivesim.T, conf *DevnetConfig) *Devnet {
 	d := &Devnet{
-		t:       t,
-		clients: roles,
-
-		accounts:    DefaultAccounts(t),
+		t:           t,
+		conf:        conf,
 		deployments: DefaultDeployments,
-		config:      DefaultConfig,
-		L1Cfg:       new(core.Genesis),
-		L2Cfg:       core.TaikoGenesisBlock(DefaultConfig.L2NetworkID),
+		rollupConf:  DefaultRollupConfig,
+		accounts:    DefaultAccounts(t),
 	}
-
-	data, err := ioutil.ReadFile("/genesis.json")
-	if err != nil {
-		d.t.Fatalf("can not read l1 genesis file, err=%v", err)
-	}
-	if err := json.Unmarshal(data, d.L1Cfg); err != nil {
-		d.t.Fatalf("can not load l1 genesis, err=%v", err)
-	}
-	d.L1Vault = NewVault(t, d.L1Cfg.Config)
-	d.L2Vault = NewVault(t, d.L2Cfg.Config)
 	return d
+}
+
+func (d *Devnet) Start(ctx context.Context) error {
+	d.Init()
+	d.StartL1ELNodes(ctx)
+	d.StartL2ELNodes(ctx)
+	d.DeployL1Contracts(ctx)
+	d.StartDriverNodes(ctx)
+	d.StartProverNodes(ctx)
+	d.StartProposerNodes(ctx)
+	return nil
 }
 
 // Init initializes the network
 func (d *Devnet) Init() {
+	clientTypes, err := d.t.Sim.ClientTypes()
+	if err != nil {
+		d.t.Fatalf("failed to retrieve list of client types: %v", err)
+	}
+	d.clients = Roles(d.t, clientTypes)
+
+	d.L1Genesis, err = getL1Genesis()
+	if err != nil {
+		d.t.Fatal(err)
+	}
+	d.L2Genesis = core.TaikoGenesisBlock(d.rollupConf.L2.NetworkID)
+	d.L1Vault = NewVault(d.t, d.L1Genesis.Config)
+	d.L2Vault = NewVault(d.t, d.L2Genesis.Config)
+}
+
+func getL1Genesis() (*core.Genesis, error) {
+	g := new(core.Genesis)
+	data, err := ioutil.ReadFile("/genesis.json")
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, g); err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 // StartL1ELNodes starts a eth1 image and add it to the network
@@ -96,8 +106,8 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 		d.t.Fatal("no eth1 client types found")
 	}
 	opts = append(opts, hivesim.Params{
-		envTaikoL1ChainId:      d.config.L1ChainID.String(),
-		envTaikoL1CliquePeriod: strconv.FormatUint(d.config.L1MineInterval, 10),
+		envTaikoL1ChainID:      d.rollupConf.L1.ChainID.String(),
+		envTaikoL1CliquePeriod: strconv.FormatUint(d.rollupConf.L1.MineInterval, 10),
 	})
 
 	for _, c := range d.clients.L1 {
@@ -117,8 +127,8 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 	d.Lock()
 	defer d.Unlock()
 	opts = append(opts, hivesim.Params{
-		envTaikoNetworkId: strconv.FormatUint(d.config.L2NetworkID, 10),
-		envTaikoJWTSecret: d.config.JWTSecret,
+		envTaikoNetworkID: strconv.FormatUint(d.rollupConf.L2.NetworkID, 10),
+		envTaikoJWTSecret: d.rollupConf.L2.JWTSecret,
 	})
 	for i, c := range d.clients.L2 {
 		if i > 0 {
@@ -152,7 +162,7 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 			envTaikoL2RollupAddress:                 d.deployments.L2RollupAddress.Hex(),
 			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
-			envTaikoJWTSecret:                       d.config.JWTSecret,
+			envTaikoJWTSecret:                       d.rollupConf.L2.JWTSecret,
 		})
 		c := d.t.StartClient(c.Name, o...)
 		d.drivers = append(d.drivers, &DriverNode{c})
@@ -167,7 +177,7 @@ func (d *Devnet) GetL2ELNode(idx int) *ELNode {
 	return d.l2Engines[idx]
 }
 
-func (d *Devnet) StartProposerNodes(ctx context.Context, params *PipelineParams) {
+func (d *Devnet) StartProposerNodes(ctx context.Context) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -186,13 +196,13 @@ func (d *Devnet) StartProposerNodes(ctx context.Context, params *PipelineParams)
 			envTaikoL2RollupAddress:       d.deployments.L2RollupAddress.Hex(),
 			envTaikoProposerPrivateKey:    d.accounts.Proposer.PrivateKeyHex,
 			envTaikoSuggestedFeeRecipient: d.accounts.SuggestedFeeRecipient.Address.Hex(),
-			envTaikoProposeInterval:       d.config.ProposeInterval.String(),
+			envTaikoProposeInterval:       d.rollupConf.L2.ProposeInterval.String(),
 			"HIVE_CHECK_LIVE_PORT":        "0",
 		},
 		)
-		if params != nil && params.ProduceInvalidBlocksInterval != 0 {
+		if d.rollupConf.L2.ProduceInvalidBlocksInterval != 0 {
 			opts = append(opts, hivesim.Params{
-				envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(params.ProduceInvalidBlocksInterval, 10),
+				envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(d.rollupConf.L2.ProduceInvalidBlocksInterval, 10),
 			})
 		}
 		d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
@@ -234,7 +244,7 @@ func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error 
 	if err != nil {
 		return err
 	}
-	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.config.L1ChainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.rollupConf.L2.ChainID)
 	if err != nil {
 		return err
 	}
@@ -273,7 +283,7 @@ func (d *Devnet) DeployL1Contracts(ctx context.Context, opts ...hivesim.StartOpt
 			envTaikoL2RollupAddress:    d.deployments.L2RollupAddress.Hex(),
 			envTaikoMainnetUrl:         e.HttpRpcEndpoint(),
 			envTaikoPrivateKey:         d.accounts.L1Deployer.PrivateKeyHex,
-			envTaikoL2ChainId:          d.config.L2ChainID.String(),
+			envTaikoL2ChainID:          d.rollupConf.L2.ChainID.String(),
 			"HIVE_CHECK_LIVE_PORT":     "0",
 		})
 
@@ -285,25 +295,4 @@ func (d *Devnet) DeployL1Contracts(ctx context.Context, opts ...hivesim.StartOpt
 		}
 		d.t.Logf("Deploy contracts on %s %s(%s)", e.Type, e.Container, e.IP)
 	}
-}
-
-type PipelineParams struct {
-	ProduceInvalidBlocksInterval uint64
-}
-
-// StartSingleNodeDevnet each component runs only one instance
-func StartSingleNodeDevnet(ctx context.Context, d *Devnet, params *PipelineParams) error {
-	d.Init()
-	d.StartL1ELNodes(ctx)
-	d.StartL2ELNodes(ctx)
-	d.DeployL1Contracts(ctx)
-	d.StartDriverNodes(ctx)
-	d.StartProverNodes(ctx)
-	d.StartProposerNodes(ctx, params)
-
-	// init bindings for tests
-	d.InitBindingsL1(0)
-	d.InitBindingsL2(0)
-
-	return WaitBlock(ctx, d.GetL1ELNode(0).EthClient(), 2)
 }
