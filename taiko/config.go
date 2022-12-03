@@ -40,7 +40,7 @@ var DefaultRollupConfig = &RollupConfig{
 	},
 }
 
-type DevnetConfig struct {
+type NodesConfig struct {
 	L1EngineCnt uint64
 	L2EngineCnt uint64
 	DriverCnt   uint64

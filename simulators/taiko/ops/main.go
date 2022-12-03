@@ -35,14 +35,8 @@ func runAllSingleNodeTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		c := &taiko.DevnetConfig{
-			L1EngineCnt: 1,
-			L2EngineCnt: 1,
-			ProposerCnt: 1,
-			DriverCnt:   1,
-			ProverCnt:   1,
-		}
-		d := taiko.NewDevnet(t, c)
+		d := taiko.NewDevnet(t, &taiko.NodesConfig{
+			L1EngineCnt: 1, L2EngineCnt: 1, ProposerCnt: 1, DriverCnt: 1, ProverCnt: 1})
 		require.NoError(t, d.Start(ctx))
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,

@@ -42,14 +42,14 @@ type Devnet struct {
 	L1Genesis *core.Genesis
 	L2Genesis *core.Genesis
 
-	rollupConf *RollupConfig // network config
-	conf       *DevnetConfig
+	rollupConf *RollupConfig
+	nodesConf  *NodesConfig
 }
 
-func NewDevnet(t *hivesim.T, conf *DevnetConfig) *Devnet {
+func NewDevnet(t *hivesim.T, conf *NodesConfig) *Devnet {
 	d := &Devnet{
 		t:           t,
-		conf:        conf,
+		nodesConf:   conf,
 		deployments: DefaultDeployments,
 		rollupConf:  DefaultRollupConfig,
 		accounts:    DefaultAccounts(t),
@@ -244,7 +244,7 @@ func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error 
 	if err != nil {
 		return err
 	}
-	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.rollupConf.L2.ChainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.rollupConf.L1.ChainID)
 	if err != nil {
 		return err
 	}

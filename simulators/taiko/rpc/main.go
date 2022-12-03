@@ -91,7 +91,7 @@ func runAllTests(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	c := &taiko.DevnetConfig{
+	c := &taiko.NodesConfig{
 		L1EngineCnt: 1,
 		L2EngineCnt: 1,
 		ProposerCnt: 1,
