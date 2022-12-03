@@ -118,6 +118,7 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 	defer d.Unlock()
 	opts = append(opts, hivesim.Params{
 		envTaikoNetworkId: strconv.FormatUint(d.config.L2NetworkID, 10),
+		envTaikoJWTSecret: d.config.JWTSecret,
 	})
 	for i, c := range d.clients.L2 {
 		if i > 0 {
@@ -151,6 +152,7 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 			envTaikoL2RollupAddress:                 d.deployments.L2RollupAddress.Hex(),
 			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
+			envTaikoJWTSecret:                       d.config.JWTSecret,
 		})
 		c := d.t.StartClient(c.Name, o...)
 		d.drivers = append(d.drivers, &DriverNode{c})

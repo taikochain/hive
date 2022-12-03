@@ -35,6 +35,7 @@ const (
 	envTaikoL1ChainId                       = "HIVE_TAIKO_L1_CHAIN_ID"
 	envTaikoL1CliquePeriod                  = "HIVE_TAIKO_L1_CLIQUE_PERIOD"
 	envTaikoProverPrivateKey                = "HIVE_TAIKO_PROVER_PRIVATE_KEY"
+	envTaikoJWTSecret                       = "HIVE_TAIKO_JWT_SECRET"
 
 	// deployer
 	envTaikoL1DeployerAddress  = "HIVE_TAIKO_L1_DEPLOYER_ADDRESS"

@@ -65,7 +65,7 @@
 # Immediately abort the script on any error encountered
 set -e
 
-echo "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7" >/jwtsecret
+echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
 
 geth \
   --nodiscover \

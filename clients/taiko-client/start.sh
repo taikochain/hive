@@ -62,6 +62,7 @@
 #  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
 #  - HIVE_TAIKO_L1_CLIQUE_PERIOD                     l1 clique period
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
+#  - HIVE_TAIKO_JWT_SECRET                           jwt secret used by driver and taiko geth
 
 set -e
 
@@ -69,7 +70,7 @@ echo "start $HIVE_TAIKO_ROLE ..."
 
 case $HIVE_TAIKO_ROLE in
 "taiko-driver")
-  echo "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7" >/jwtsecret
+  echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
   taiko-client driver \
     --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
     --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
