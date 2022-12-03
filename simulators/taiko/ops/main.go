@@ -17,21 +17,21 @@ import (
 // 3. driver sync from zero height
 // 4. driver sync from some none zero height
 func main() {
-	singleNode := hivesim.Suite{
+	suit := hivesim.Suite{
 		Name:        "taiko ops",
 		Description: "Test propose, sync and other things",
 	}
-	singleNode.Add(&hivesim.TestSpec{
+	suit.Add(&hivesim.TestSpec{
 		Name:        "single node net ops",
 		Description: "test ops on single node net",
-		Run:         runAllSingleNodeTests(singeNodesTests),
+		Run:         runAllTests(allTests),
 	})
 
 	sim := hivesim.New()
-	hivesim.MustRun(sim, singleNode)
+	hivesim.MustRun(sim, suit)
 }
 
-func runAllSingleNodeTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
+func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
@@ -46,11 +46,20 @@ func runAllSingleNodeTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	}
 }
 
-var singeNodesTests = []*taiko.TestSpec{
+var allTests = []*taiko.TestSpec{
 	// {Name: "propose 2048 blocks at once", Run: testPropose2048Blocks},
-	{Name: "propose bad blocks", Run: testProposeBadBlocks},
+	// {Name: "propose bad blocks", Run: testProposeBadBlocks},
 	// {Name: "driver sync from zero height", Run: testDriverSyncFromZeroHeight},
 	// {Name: "driver sync from some none zero height", Run: testDriverSyncFromNoneZeroHeight},
+	{Name: "example", Run: testExample},
+}
+
+func testExample(t *hivesim.T, env *taiko.TestEnv) {
+	t.Logf("run example test")
+	d := env.Devnet
+	l2 := d.GetL2ELNode(0)
+	address := d.L2Vault.CreateAccount(env.Ctx(), l2.EthClient(), big.NewInt(params.Ether))
+	t.Logf("address=%v", address)
 }
 
 func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
@@ -58,12 +67,7 @@ func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
 }
 
 func testProposeBadBlocks(t *hivesim.T, env *taiko.TestEnv) {
-	d := env.Devnet
-	l2 := d.GetL2ELNode(0)
-	// taiko.WaitBlock(ctx, l2.EthClient(), 1)
-	address := d.L2Vault.CreateAccount(env.Ctx(), l2.EthClient(), big.NewInt(params.Ether))
-
-	t.Logf("address=%v", address)
+	// TODO
 }
 
 func testDriverSyncFromZeroHeight(t *hivesim.T, env *taiko.TestEnv) {
