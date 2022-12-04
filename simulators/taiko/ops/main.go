@@ -38,11 +38,15 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 		d := taiko.NewDevnet(t, &taiko.NodesConfig{
 			L1EngineCnt: 1, L2EngineCnt: 1, ProposerCnt: 1, DriverCnt: 1, ProverCnt: 1})
 		require.NoError(t, d.Start(ctx))
-		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
-			Devnet:      d,
-			Tests:       tests,
-			Concurrency: 1,
-		})
+		t.Log("run all tests")
+		// taiko.RunTests(ctx, t, &taiko.RunTestsParams{
+		// 	Devnet:      d,
+		// 	Tests:       tests,
+		// 	Concurrency: 10,
+		// })
+		for _, test := range tests {
+			test.Run(t, &taiko.TestEnv{Context: ctx, Devnet: d})
+		}
 	}
 }
 
@@ -60,6 +64,19 @@ func testExample(t *hivesim.T, env *taiko.TestEnv) {
 	l2 := d.GetL2ELNode(0)
 	address := d.L2Vault.CreateAccount(env.Ctx(), l2.EthClient(), big.NewInt(params.Ether))
 	t.Logf("address=%v", address)
+	for {
+		num, err := l2.EthClient().BlockNumber(env.Ctx())
+		if err != nil {
+			t.Logf("query l2 number err=%v", err)
+			continue
+		}
+		t.Logf("latest l2 number %v", num)
+		if num != 1 {
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
+	}
 }
 
 func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
