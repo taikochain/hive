@@ -59,10 +59,9 @@ func NewDevnet(t *hivesim.T, conf *NodesConfig) *Devnet {
 func (d *Devnet) Start(ctx context.Context) error {
 	d.Init()
 	d.AddL1ELNode(ctx, 0)
-	d.DeployL1Contracts(ctx, d.l1Engines[len(d.l1Engines)-1])
 	d.AddL2ELNode(ctx, 0)
 	d.AddDriverNode(ctx, d.l1Engines[0], d.l2Engines[0])
-	d.StartProverNodes(ctx, d.l1Engines[0], d.l2Engines[0])
+	d.AddProverNode(ctx, d.l1Engines[0], d.l2Engines[0])
 	d.AddProposerNode(ctx, d.l1Engines[0], d.l2Engines[0])
 	return nil
 }
@@ -113,7 +112,7 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.Star
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L1.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
 	d.l1Engines = append(d.l1Engines, n)
-
+	d.deployL1Contracts(ctx, n)
 }
 
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
@@ -204,7 +203,7 @@ func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) {
 	d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
 }
 
-func (d *Devnet) StartProverNodes(ctx context.Context, l1, l2 *ELNode) {
+func (d *Devnet) AddProverNode(ctx context.Context, l1, l2 *ELNode) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -258,8 +257,8 @@ func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error 
 	return nil
 }
 
-// DeployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (d *Devnet) DeployL1Contracts(ctx context.Context, l1Node *ELNode) {
+// deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
+func (d *Devnet) deployL1Contracts(ctx context.Context, l1Node *ELNode) {
 	d.Lock()
 	defer d.Unlock()
 
