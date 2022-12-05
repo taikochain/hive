@@ -62,17 +62,8 @@
 #  - HIVE_TAIKO_L1_CLIQUE_PERIOD                     l1 clique period
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
 
-# Immediately abort the script on any error encountered
 set -e
 
-echo "0x7365637265747365637265747365637265747365637265747365637265747365" >/jwtsecret
+cat /genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/1336/g" /genesis.json
+cat /genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/0/g" /genesis.json
 
-taiko-client driver \
-  --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-  --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-  --l2.engine "$HIVE_TAIKO_L2_ENGINE_ENDPOINT" \
-  --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-  --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-  --l2.throwawayBlockBuilderPrivKey "$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY" \
-  --jwtSecret /jwtsecret \
-  --verbosity 4

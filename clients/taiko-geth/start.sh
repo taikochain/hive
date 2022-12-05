@@ -65,10 +65,13 @@
 # Immediately abort the script on any error encountered
 set -e
 
-echo "0x7365637265747365637265747365637265747365637265747365637265747365" >/jwtsecret
+echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
 
 geth \
+  --nodiscover \
+  --gcmode archive \
   --syncmode full \
+  --datadir /data/taioko-geth \
   --networkid "$HIVE_TAIKO_NETWORK_ID" \
   --http \
   --http.addr 0.0.0.0 \
@@ -83,4 +86,5 @@ geth \
   --allow-insecure-unlock \
   --http.api admin,debug,eth,net,web3,txpool,miner,taiko \
   --ws.api admin,debug,eth,net,web3,txpool,miner,taiko \
+  --verbosity 4 \
   --taiko

@@ -56,9 +56,10 @@ type TestSpec struct {
 	Run         func(t *hivesim.T, env *TestEnv)
 }
 
+// TestEnv is the environment of a single test.
 type TestEnv struct {
 	Context context.Context
-	Devnet  *Devnet
+	DevNet  *Devnet
 
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
@@ -98,7 +99,7 @@ func RunTests(ctx context.Context, t *hivesim.T, params *RunTestsParams) {
 			defer s.Release(1)
 			env := &TestEnv{
 				Context: ctx,
-				Devnet:  params.Devnet,
+				DevNet:  params.Devnet,
 			}
 
 			require.NoError(t, s.Acquire(ctx, 1))

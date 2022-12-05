@@ -77,6 +77,7 @@ geth \
 
 geth \
   --nodiscover \
+  --gcmode archive \
   --networkid 1336 \
   --http \
   --http.addr 0.0.0.0 \
