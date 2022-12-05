@@ -35,24 +35,23 @@ type Devnet struct {
 	L1Vault *Vault
 	L2Vault *Vault
 
-	accounts *Accounts // all accounts will be used in the network
-
-	deployments *Deployments // contracts deployment info
+	accounts *TestAccounts // all accounts will be used in the network
 
 	L1Genesis *core.Genesis
 	L2Genesis *core.Genesis
 
+	deployConf *DeployConfig // contracts deployment info
 	rollupConf *RollupConfig
 	nodesConf  *NodesConfig
 }
 
 func NewDevnet(t *hivesim.T, conf *NodesConfig) *Devnet {
 	d := &Devnet{
-		t:           t,
-		nodesConf:   conf,
-		deployments: DefaultDeployments,
-		rollupConf:  DefaultRollupConfig,
-		accounts:    DefaultAccounts(t),
+		t:          t,
+		nodesConf:  conf,
+		deployConf: DefaultDeployments(t),
+		rollupConf: DefaultRollupConfig,
+		accounts:   DefaultAccounts(t),
 	}
 	return d
 }
@@ -111,7 +110,7 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 	})
 
 	for _, c := range d.clients.L1 {
-		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployments.L1RollupAddress})
+		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L1.RollupAddress})
 	}
 	WaitELNodesUp(ctx, d.t, d.l1Engines, 10*time.Second)
 }
@@ -141,7 +140,7 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 				envTaikoBootNode: enodeURL,
 			})
 		}
-		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployments.L2RollupAddress})
+		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L2.RollupAddress})
 	}
 	WaitELNodesUp(ctx, d.t, d.l2Engines, 10*time.Second)
 }
@@ -158,9 +157,9 @@ func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOpti
 			envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
 			envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
-			envTaikoL1RollupAddress:                 d.deployments.L1RollupAddress.Hex(),
-			envTaikoL2RollupAddress:                 d.deployments.L2RollupAddress.Hex(),
-			envTaikoThrowawayBlockBuilderPrivateKey: d.accounts.Throwawayer.PrivateKeyHex,
+			envTaikoL1RollupAddress:                 d.deployConf.L1.RollupAddress.Hex(),
+			envTaikoL2RollupAddress:                 d.deployConf.L2.RollupAddress.Hex(),
+			envTaikoThrowawayBlockBuilderPrivateKey: d.deployConf.L2.Throwawayer.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":                  "0",
 			envTaikoJWTSecret:                       d.rollupConf.L2.JWTSecret,
 		})
@@ -192,10 +191,10 @@ func (d *Devnet) StartProposerNodes(ctx context.Context) {
 			envTaikoRole:                  taikoProposer,
 			envTaikoL1RPCEndpoint:         l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:         l2.WsRpcEndpoint(),
-			envTaikoL1RollupAddress:       d.deployments.L1RollupAddress.Hex(),
-			envTaikoL2RollupAddress:       d.deployments.L2RollupAddress.Hex(),
-			envTaikoProposerPrivateKey:    d.accounts.Proposer.PrivateKeyHex,
-			envTaikoSuggestedFeeRecipient: d.accounts.SuggestedFeeRecipient.Address.Hex(),
+			envTaikoL1RollupAddress:       d.deployConf.L1.RollupAddress.Hex(),
+			envTaikoL2RollupAddress:       d.deployConf.L2.RollupAddress.Hex(),
+			envTaikoProposerPrivateKey:    d.deployConf.L2.Proposer.PrivateKeyHex,
+			envTaikoSuggestedFeeRecipient: d.deployConf.L2.SuggestedFeeRecipient.Address.Hex(),
 			envTaikoProposeInterval:       d.rollupConf.L2.ProposeInterval.String(),
 			"HIVE_CHECK_LIVE_PORT":        "0",
 		},
@@ -229,9 +228,9 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 			envTaikoRole:             taikoProver,
 			envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
 			envTaikoL2RPCEndpoint:    l2.WsRpcEndpoint(),
-			envTaikoL1RollupAddress:  d.deployments.L1RollupAddress.Hex(),
-			envTaikoL2RollupAddress:  d.deployments.L2RollupAddress.Hex(),
-			envTaikoProverPrivateKey: d.accounts.Prover.PrivateKeyHex,
+			envTaikoL1RollupAddress:  d.deployConf.L1.RollupAddress.Hex(),
+			envTaikoL2RollupAddress:  d.deployConf.L2.RollupAddress.Hex(),
+			envTaikoProverPrivateKey: d.deployConf.L2.Prover.PrivateKeyHex,
 			"HIVE_CHECK_LIVE_PORT":   "0",
 		})
 		d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
@@ -240,16 +239,16 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 }
 
 func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error {
-	taikoL1, err := bindings.NewTaikoL1Client(d.deployments.L1RollupAddress, cli)
+	taikoL1, err := bindings.NewTaikoL1Client(d.deployConf.L1.RollupAddress, cli)
 	if err != nil {
 		return err
 	}
-	opts, err := bind.NewKeyedTransactorWithChainID(d.accounts.L1Deployer.PrivateKey, d.rollupConf.L1.ChainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(d.deployConf.L1.Deployer.PrivateKey, d.rollupConf.L1.ChainID)
 	if err != nil {
 		return err
 	}
 	opts.GasTipCap = big.NewInt(1500000000)
-	tx, err := taikoL1.WhitelistProver(opts, d.accounts.Prover.Address, true)
+	tx, err := taikoL1.WhitelistProver(opts, d.deployConf.L2.Prover.Address, true)
 	if err != nil {
 		return err
 	}
@@ -278,11 +277,11 @@ func (d *Devnet) DeployL1Contracts(ctx context.Context, opts ...hivesim.StartOpt
 	}
 	for i, e := range d.l1Engines {
 		opts = append(opts, hivesim.Params{
-			envTaikoL1DeployerAddress:  d.accounts.L1Deployer.Address.Hex(),
-			envTaikoL2GenesisBlockHash: d.deployments.L2GenesisBlockHash.Hex(),
-			envTaikoL2RollupAddress:    d.deployments.L2RollupAddress.Hex(),
+			envTaikoPrivateKey:         d.deployConf.L1.Deployer.PrivateKeyHex,
+			envTaikoL1DeployerAddress:  d.deployConf.L1.Deployer.Address.Hex(),
+			envTaikoL2GenesisBlockHash: d.deployConf.L2.GenesisBlockHash.Hex(),
+			envTaikoL2RollupAddress:    d.deployConf.L2.RollupAddress.Hex(),
 			envTaikoMainnetUrl:         e.HttpRpcEndpoint(),
-			envTaikoPrivateKey:         d.accounts.L1Deployer.PrivateKeyHex,
 			envTaikoL2ChainID:          d.rollupConf.L2.ChainID.String(),
 			"HIVE_CHECK_LIVE_PORT":     "0",
 		})

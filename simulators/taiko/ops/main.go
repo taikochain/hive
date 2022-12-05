@@ -52,7 +52,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 }
 
 func testGenProveFirstL2Block(t *hivesim.T, env *taiko.TestEnv) {
-	d := env.Devnet
+	d := env.Net
 	l2 := d.GetL2ELNode(0)
 	address := d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
 	t.Logf("address=%v", address)
