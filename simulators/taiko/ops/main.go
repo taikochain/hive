@@ -42,7 +42,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 		defer cancel()
 		d := taiko.NewDevnet(t, &taiko.NodesConfig{
 			L1EngineCnt: 1, L2EngineCnt: 1, ProposerCnt: 1, DriverCnt: 1, ProverCnt: 1})
-		require.NoError(t, d.Start(ctx))
+		require.NoError(t, d.StartSingleNodeNet(ctx))
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,
 			Tests:       tests,
@@ -52,7 +52,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 }
 
 func testGenProveFirstL2Block(t *hivesim.T, env *taiko.TestEnv) {
-	d := env.Net
+	d := env.DevNet
 	l2 := d.GetL2ELNode(0)
 	address := d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
 	t.Logf("address=%v", address)

@@ -99,7 +99,7 @@ func runAllTests(t *hivesim.T) {
 		ProverCnt:   1,
 	}
 	d := taiko.NewDevnet(t, c)
-	require.NoError(t, d.Start(ctx))
+	require.NoError(t, d.StartSingleNodeNet(ctx))
 	l2 := d.GetL2ELNode(0)
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.

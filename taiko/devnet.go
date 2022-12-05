@@ -56,7 +56,7 @@ func NewDevnet(t *hivesim.T, conf *NodesConfig) *Devnet {
 	return d
 }
 
-func (d *Devnet) Start(ctx context.Context) error {
+func (d *Devnet) StartSingleNodeNet(ctx context.Context) error {
 	d.Init()
 	d.AddL1ELNode(ctx, 0)
 	d.AddL2ELNode(ctx, 0)
@@ -141,7 +141,7 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 	c := d.clients.L2[clientIdx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L2.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
-	d.l2Engines = append(d.l2Engines)
+	d.l2Engines = append(d.l2Engines, n)
 }
 
 func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) {
