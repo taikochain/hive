@@ -58,12 +58,12 @@ func NewDevnet(t *hivesim.T, conf *NodesConfig) *Devnet {
 
 func (d *Devnet) Start(ctx context.Context) error {
 	d.Init()
-	d.StartL1ELNodes(ctx)
-	d.StartL2ELNodes(ctx)
-	d.DeployL1Contracts(ctx)
-	d.StartDriverNodes(ctx)
-	d.StartProverNodes(ctx)
-	d.StartProposerNodes(ctx)
+	d.AddL1ELNode(ctx, 0)
+	d.DeployL1Contracts(ctx, d.l1Engines[len(d.l1Engines)-1])
+	d.AddL2ELNode(ctx, 0)
+	d.AddDriverNode(ctx, d.l1Engines[0], d.l2Engines[0])
+	d.StartProverNodes(ctx, d.l1Engines[0], d.l2Engines[0])
+	d.AddProposerNode(ctx, d.l1Engines[0], d.l2Engines[0])
 	return nil
 }
 
@@ -96,8 +96,8 @@ func getL1Genesis() (*core.Genesis, error) {
 	return g, nil
 }
 
-// StartL1ELNodes starts a eth1 image and add it to the network
-func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption) {
+// AddL1ELNode starts a eth1 image and add it to the network
+func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -109,10 +109,11 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 		envTaikoL1CliquePeriod: strconv.FormatUint(d.rollupConf.L1.MineInterval, 10),
 	})
 
-	for _, c := range d.clients.L1 {
-		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L1.RollupAddress})
-	}
-	WaitELNodesUp(ctx, d.t, d.l1Engines, 10*time.Second)
+	c := d.clients.L1[Idx]
+	n := &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L1.RollupAddress}
+	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
+	d.l1Engines = append(d.l1Engines, n)
+
 }
 
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
@@ -122,50 +123,48 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	return d.l1Engines[idx]
 }
 
-func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption) {
+func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 	opts = append(opts, hivesim.Params{
 		envTaikoNetworkID: strconv.FormatUint(d.rollupConf.L2.NetworkID, 10),
 		envTaikoJWTSecret: d.rollupConf.L2.JWTSecret,
 	})
-	for i, c := range d.clients.L2 {
-		if i > 0 {
-			l2 := d.GetL2ELNode(i - 1)
-			enodeURL, err := l2.EnodeURL()
-			if err != nil {
-				d.t.Fatalf("failed to get enode url of the first taiko geth node, error: %w", err)
-			}
-			opts = append(opts, hivesim.Params{
-				envTaikoBootNode: enodeURL,
-			})
+	for _, n := range d.l2Engines {
+		enodeURL, err := n.EnodeURL()
+		if err != nil {
+			d.t.Fatalf("failed to get enode url of the first taiko geth node, error: %w", err)
 		}
-		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L2.RollupAddress})
+		opts = append(opts, hivesim.Params{
+			envTaikoBootNode: enodeURL,
+		})
 	}
-	WaitELNodesUp(ctx, d.t, d.l2Engines, 10*time.Second)
+	c := d.clients.L2[clientIdx]
+	n := &ELNode{d.t.StartClient(c.Name, opts...), d.deployConf.L2.RollupAddress}
+	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
+	d.l2Engines = append(d.l2Engines)
 }
 
-func (d *Devnet) StartDriverNodes(ctx context.Context, opts ...hivesim.StartOption) {
+func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) {
 	d.Lock()
 	defer d.Unlock()
 
-	for i, c := range d.clients.Driver {
-		l1 := d.GetL1ELNode(i % len(d.l1Engines))
-		l2 := d.GetL2ELNode(i)
-		o := append(opts, hivesim.Params{
-			envTaikoRole:                            taikoDriver,
-			envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
-			envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
-			envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
-			envTaikoL1RollupAddress:                 d.deployConf.L1.RollupAddress.Hex(),
-			envTaikoL2RollupAddress:                 d.deployConf.L2.RollupAddress.Hex(),
-			envTaikoThrowawayBlockBuilderPrivateKey: d.deployConf.L2.Throwawayer.PrivateKeyHex,
-			"HIVE_CHECK_LIVE_PORT":                  "0",
-			envTaikoJWTSecret:                       d.rollupConf.L2.JWTSecret,
-		})
-		c := d.t.StartClient(c.Name, o...)
-		d.drivers = append(d.drivers, &DriverNode{c})
+	if len(d.l2Engines)-len(d.drivers) != 1 {
+		d.t.Fatalf("l2 engines number must equals driver number")
 	}
+	c := d.clients.Driver[0]
+	opts = append(opts, hivesim.Params{
+		envTaikoRole:                            taikoDriver,
+		envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
+		envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
+		envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
+		envTaikoL1RollupAddress:                 d.deployConf.L1.RollupAddress.Hex(),
+		envTaikoL2RollupAddress:                 d.deployConf.L2.RollupAddress.Hex(),
+		envTaikoThrowawayBlockBuilderPrivateKey: d.deployConf.L2.Throwawayer.PrivateKeyHex,
+		"HIVE_CHECK_LIVE_PORT":                  "0",
+		envTaikoJWTSecret:                       d.rollupConf.L2.JWTSecret,
+	})
+	d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, opts...)})
 }
 
 func (d *Devnet) GetL2ELNode(idx int) *ELNode {
@@ -176,39 +175,36 @@ func (d *Devnet) GetL2ELNode(idx int) *ELNode {
 	return d.l2Engines[idx]
 }
 
-func (d *Devnet) StartProposerNodes(ctx context.Context) {
+func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) {
 	d.Lock()
 	defer d.Unlock()
 
 	if len(d.clients.Proposer) == 0 {
 		d.t.Fatalf("no taiko proposer client types found")
 	}
-	for i, c := range d.clients.Proposer {
-		l1 := d.GetL1ELNode(i % len(d.l1Engines))
-		l2 := d.GetL2ELNode(i % len(d.l2Engines))
-		var opts []hivesim.StartOption
+	var opts []hivesim.StartOption
+	opts = append(opts, hivesim.Params{
+		envTaikoRole:                  taikoProposer,
+		envTaikoL1RPCEndpoint:         l1.WsRpcEndpoint(),
+		envTaikoL2RPCEndpoint:         l2.WsRpcEndpoint(),
+		envTaikoL1RollupAddress:       d.deployConf.L1.RollupAddress.Hex(),
+		envTaikoL2RollupAddress:       d.deployConf.L2.RollupAddress.Hex(),
+		envTaikoProposerPrivateKey:    d.deployConf.L2.Proposer.PrivateKeyHex,
+		envTaikoSuggestedFeeRecipient: d.deployConf.L2.SuggestedFeeRecipient.Address.Hex(),
+		envTaikoProposeInterval:       d.rollupConf.L2.ProposeInterval.String(),
+		"HIVE_CHECK_LIVE_PORT":        "0",
+	},
+	)
+	if d.rollupConf.L2.ProduceInvalidBlocksInterval != 0 {
 		opts = append(opts, hivesim.Params{
-			envTaikoRole:                  taikoProposer,
-			envTaikoL1RPCEndpoint:         l1.WsRpcEndpoint(),
-			envTaikoL2RPCEndpoint:         l2.WsRpcEndpoint(),
-			envTaikoL1RollupAddress:       d.deployConf.L1.RollupAddress.Hex(),
-			envTaikoL2RollupAddress:       d.deployConf.L2.RollupAddress.Hex(),
-			envTaikoProposerPrivateKey:    d.deployConf.L2.Proposer.PrivateKeyHex,
-			envTaikoSuggestedFeeRecipient: d.deployConf.L2.SuggestedFeeRecipient.Address.Hex(),
-			envTaikoProposeInterval:       d.rollupConf.L2.ProposeInterval.String(),
-			"HIVE_CHECK_LIVE_PORT":        "0",
-		},
-		)
-		if d.rollupConf.L2.ProduceInvalidBlocksInterval != 0 {
-			opts = append(opts, hivesim.Params{
-				envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(d.rollupConf.L2.ProduceInvalidBlocksInterval, 10),
-			})
-		}
-		d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
+			envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(d.rollupConf.L2.ProduceInvalidBlocksInterval, 10),
+		})
 	}
+	c := d.clients.Proposer[0]
+	d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
 }
 
-func (d *Devnet) StartProverNodes(ctx context.Context) {
+func (d *Devnet) StartProverNodes(ctx context.Context, l1, l2 *ELNode) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -216,26 +212,21 @@ func (d *Devnet) StartProverNodes(ctx context.Context) {
 		d.t.Fatalf("no taiko prover client types found")
 		return
 	}
-	for i, c := range d.clients.Prover {
-		l1 := d.GetL1ELNode(i % len(d.l1Engines))
-		l2 := d.GetL2ELNode(i % len(d.l2Engines))
-
-		if err := d.addWhitelist(ctx, l1.EthClient()); err != nil {
-			d.t.Fatalf("add whitelist failed, err=%v", err)
-		}
-		var opts []hivesim.StartOption
-		opts = append(opts, hivesim.Params{
-			envTaikoRole:             taikoProver,
-			envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
-			envTaikoL2RPCEndpoint:    l2.WsRpcEndpoint(),
-			envTaikoL1RollupAddress:  d.deployConf.L1.RollupAddress.Hex(),
-			envTaikoL2RollupAddress:  d.deployConf.L2.RollupAddress.Hex(),
-			envTaikoProverPrivateKey: d.deployConf.L2.Prover.PrivateKeyHex,
-			"HIVE_CHECK_LIVE_PORT":   "0",
-		})
-		d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
+	if err := d.addWhitelist(ctx, l1.EthClient()); err != nil {
+		d.t.Fatalf("add whitelist failed, err=%v", err)
 	}
-
+	var opts []hivesim.StartOption
+	opts = append(opts, hivesim.Params{
+		envTaikoRole:             taikoProver,
+		envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
+		envTaikoL2RPCEndpoint:    l2.WsRpcEndpoint(),
+		envTaikoL1RollupAddress:  d.deployConf.L1.RollupAddress.Hex(),
+		envTaikoL2RollupAddress:  d.deployConf.L2.RollupAddress.Hex(),
+		envTaikoProverPrivateKey: d.deployConf.L2.Prover.PrivateKeyHex,
+		"HIVE_CHECK_LIVE_PORT":   "0",
+	})
+	c := d.clients.Prover[0]
+	d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
 }
 
 func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error {
@@ -268,30 +259,29 @@ func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error 
 }
 
 // DeployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (d *Devnet) DeployL1Contracts(ctx context.Context, opts ...hivesim.StartOption) {
+func (d *Devnet) DeployL1Contracts(ctx context.Context, l1Node *ELNode) {
 	d.Lock()
 	defer d.Unlock()
 
 	if d.clients.Contract == nil {
 		d.t.Fatalf("no taiko protocol client types found")
 	}
-	for i, e := range d.l1Engines {
-		opts = append(opts, hivesim.Params{
-			envTaikoPrivateKey:         d.deployConf.L1.Deployer.PrivateKeyHex,
-			envTaikoL1DeployerAddress:  d.deployConf.L1.Deployer.Address.Hex(),
-			envTaikoL2GenesisBlockHash: d.deployConf.L2.GenesisBlockHash.Hex(),
-			envTaikoL2RollupAddress:    d.deployConf.L2.RollupAddress.Hex(),
-			envTaikoMainnetUrl:         e.HttpRpcEndpoint(),
-			envTaikoL2ChainID:          d.rollupConf.L2.ChainID.String(),
-			"HIVE_CHECK_LIVE_PORT":     "0",
-		})
-
-		n := &ContractNode{d.t.StartClient(d.clients.Contract.Name, opts...)}
-		result, err := n.Exec("deploy.sh")
-		if err != nil || result.ExitCode != 0 {
-			d.t.Fatalf("failed to deploy contract on engine node %d(%s), error: %v, result: %v",
-				i, e.Container, err, result)
-		}
-		d.t.Logf("Deploy contracts on %s %s(%s)", e.Type, e.Container, e.IP)
+	var opts []hivesim.StartOption
+	opts = append(opts, hivesim.Params{
+		envTaikoPrivateKey:         d.deployConf.L1.Deployer.PrivateKeyHex,
+		envTaikoL1DeployerAddress:  d.deployConf.L1.Deployer.Address.Hex(),
+		envTaikoL2GenesisBlockHash: d.deployConf.L2.GenesisBlockHash.Hex(),
+		envTaikoL2RollupAddress:    d.deployConf.L2.RollupAddress.Hex(),
+		envTaikoMainnetUrl:         l1Node.HttpRpcEndpoint(),
+		envTaikoL2ChainID:          d.rollupConf.L2.ChainID.String(),
+		"HIVE_CHECK_LIVE_PORT":     "0",
+	})
+	n := &ContractNode{d.t.StartClient(d.clients.Contract.Name, opts...)}
+	result, err := n.Exec("deploy.sh")
+	if err != nil || result.ExitCode != 0 {
+		d.t.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %v",
+			l1Node.Container, err, result)
 	}
+	d.t.Logf("Deploy contracts on %s %s(%s)", l1Node.Type, l1Node.Container, l1Node.IP)
+
 }

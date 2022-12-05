@@ -53,7 +53,6 @@ func (e *ELNode) EthClient() *ethclient.Client {
 	return ethclient.NewClient(e.RPC())
 }
 
-
 func (e *ELNode) L1TaikoClient() (*bindings.TaikoL1Client, error) {
 	c, err := e.RawRpcClient()
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -15,20 +14,12 @@ import (
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
-func WaitELNodesUp(ctx context.Context, t *hivesim.T, nodes []*ELNode, timeout time.Duration) {
-	var wg sync.WaitGroup
-	for i, n := range nodes {
-		wg.Add(1)
-		go func(i int, node *ELNode) {
-			defer wg.Done()
-			ctx, cancel := context.WithTimeout(ctx, timeout)
-			defer cancel()
-			if _, err := node.EthClient().ChainID(ctx); err != nil {
-				t.Fatalf("engine node %s_%d should be up within %v,err=%v", node.Type, i, timeout, err)
-			}
-		}(i, n)
+func WaitELNodesUp(ctx context.Context, t *hivesim.T, node *ELNode, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	if _, err := node.EthClient().ChainID(ctx); err != nil {
+		t.Fatalf("engine node %s should be up within %v,err=%v", node.Type, timeout, err)
 	}
-	wg.Wait()
 }
 
 func WaitBlock(ctx context.Context, client *ethclient.Client, n uint64) error {
@@ -85,12 +76,12 @@ type L1State struct {
 	NextBlockId          uint64
 }
 
-func GetL1State(cli *bindings.TaikoL1Client) (*L1State,error) {
+func GetL1State(cli *bindings.TaikoL1Client) (*L1State, error) {
 	s := new(L1State)
 	var err error
-	s.GenesisHeight, s.LatestVerifiedHeight,s.LatestVerifiedId, s.NextBlockId, err = cli.GetStateVariables(nil)
-	if err!=nil{
-		return nil,err
+	s.GenesisHeight, s.LatestVerifiedHeight, s.LatestVerifiedId, s.NextBlockId, err = cli.GetStateVariables(nil)
+	if err != nil {
+		return nil, err
 	}
-	return s,nil
+	return s, nil
 }
