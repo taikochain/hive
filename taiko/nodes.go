@@ -45,16 +45,29 @@ func (e *ELNode) WsRpcEndpoint() string {
 	}
 }
 
+func (e *ELNode) RawRpcClient() (*ethclient.Client, error) {
+	return ethclient.Dial(e.WsRpcEndpoint())
+}
+
 func (e *ELNode) EthClient() *ethclient.Client {
 	return ethclient.NewClient(e.RPC())
 }
 
+
 func (e *ELNode) L1TaikoClient() (*bindings.TaikoL1Client, error) {
-	return bindings.NewTaikoL1Client(e.TaikoAddr, e.EthClient())
+	c, err := e.RawRpcClient()
+	if err != nil {
+		return nil, err
+	}
+	return bindings.NewTaikoL1Client(e.TaikoAddr, c)
 }
 
 func (e *ELNode) L2TaikoClient() (*bindings.V1TaikoL2Client, error) {
-	return bindings.NewV1TaikoL2Client(e.TaikoAddr, e.EthClient())
+	c, err := e.RawRpcClient()
+	if err != nil {
+		return nil, err
+	}
+	return bindings.NewV1TaikoL2Client(e.TaikoAddr, c)
 }
 
 type DriverNode struct {

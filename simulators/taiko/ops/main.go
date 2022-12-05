@@ -5,10 +5,12 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
+	"github.com/taikoxyz/taiko-client/bindings"
 )
 
 var allTests = []*taiko.TestSpec{
@@ -57,16 +59,29 @@ func testGenProveFirstL2Block(t *hivesim.T, env *taiko.TestEnv) {
 	l1 := d.GetL1ELNode(0)
 	taikoL1, err := l1.L1TaikoClient()
 	require.Nil(t, err)
-	for {
-		s, err := taiko.GetL1State(taikoL1)
-		require.Nil(t, err)
-		t.Logf("state=%+v", s)
-		if s.NextBlockId < 1 {
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		break
+
+	start := uint64(0)
+	opt := &bind.WatchOpts{Start: &start, Context: env.Context}
+	sink := make(chan *bindings.TaikoL1ClientBlockProven)
+	sub, err := taikoL1.WatchBlockProven(opt, sink, []*big.Int{big.NewInt(1)})
+	if err != nil {
+		t.Fatal("Failed to watch prove event", err)
 	}
+	for {
+		select {
+		case err := <-sub.Err():
+			t.Fatal("Failed to watch prove event", err)
+		case e := <-sink:
+			if e.Id.Uint64() == 1 {
+				t.Log("all success")
+				return
+			}
+		case <-env.Context.Done():
+			t.Log("test is finished before watch proved event")
+			return
+		}
+	}
+
 }
 
 func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
