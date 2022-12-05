@@ -3,8 +3,10 @@ package taiko
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
+	"github.com/taikoxyz/taiko-client/bindings"
 )
 
 // These ports are exposed on the docker containers, and accessible via the docker network that the hive test runs in.
@@ -20,6 +22,7 @@ const (
 // execution layer node definition
 type ELNode struct {
 	*hivesim.Client
+	TaikoAddr common.Address
 }
 
 func (e *ELNode) HttpRpcEndpoint() string {
@@ -44,6 +47,14 @@ func (e *ELNode) WsRpcEndpoint() string {
 
 func (e *ELNode) EthClient() *ethclient.Client {
 	return ethclient.NewClient(e.RPC())
+}
+
+func (e *ELNode) L1TaikoClient() (*bindings.TaikoL1Client, error) {
+	return bindings.NewTaikoL1Client(e.TaikoAddr, e.EthClient())
+}
+
+func (e *ELNode) L2TaikoClient() (*bindings.V1TaikoL2Client, error) {
+	return bindings.NewV1TaikoL2Client(e.TaikoAddr, e.EthClient())
 }
 
 type DriverNode struct {

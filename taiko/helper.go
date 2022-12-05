@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
+	"github.com/taikoxyz/taiko-client/bindings"
 )
 
 func WaitELNodesUp(ctx context.Context, t *hivesim.T, nodes []*ELNode, timeout time.Duration) {
@@ -75,4 +76,21 @@ func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash
 		}
 		return receipt, nil
 	}
+}
+
+type L1State struct {
+	GenesisHeight        uint64
+	LatestVerifiedHeight uint64
+	LatestVerifiedId     uint64
+	NextBlockId          uint64
+}
+
+func GetL1State(cli *bindings.TaikoL1Client) (*L1State,error) {
+	s := new(L1State)
+	var err error
+	s.GenesisHeight, s.LatestVerifiedHeight,s.LatestVerifiedId, s.NextBlockId, err = cli.GetStateVariables(nil)
+	if err!=nil{
+		return nil,err
+	}
+	return s,nil
 }

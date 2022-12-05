@@ -35,7 +35,7 @@ var DefaultRollupConfig = &RollupConfig{
 	L2: &L2Config{
 		ChainID:         params.TaikoAlpha1NetworkID,
 		NetworkID:       params.TaikoAlpha1NetworkID.Uint64(),
-		ProposeInterval: 30 * time.Second,
+		ProposeInterval: time.Second,
 		JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
 	},
 }

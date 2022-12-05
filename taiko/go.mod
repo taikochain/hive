@@ -11,11 +11,11 @@ require (
 	github.com/ethereum/go-ethereum v1.10.25
 	github.com/ethereum/hive v0.0.0-20221028130025-473d051e991a
 	github.com/stretchr/testify v1.8.1
+	github.com/taikoxyz/taiko-client v0.1.6
 	golang.org/x/sync v0.1.0
 )
 
 require (
-	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
@@ -43,7 +43,6 @@ require (
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a // indirect
-	github.com/taikoxyz/taiko-client v0.1.4 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.5.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect

@@ -111,7 +111,7 @@ func (d *Devnet) StartL1ELNodes(ctx context.Context, opts ...hivesim.StartOption
 	})
 
 	for _, c := range d.clients.L1 {
-		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...)})
+		d.l1Engines = append(d.l1Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployments.L1RollupAddress})
 	}
 	WaitELNodesUp(ctx, d.t, d.l1Engines, 10*time.Second)
 }
@@ -141,7 +141,7 @@ func (d *Devnet) StartL2ELNodes(ctx context.Context, opts ...hivesim.StartOption
 				envTaikoBootNode: enodeURL,
 			})
 		}
-		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...)})
+		d.l2Engines = append(d.l2Engines, &ELNode{d.t.StartClient(c.Name, opts...), d.deployments.L2RollupAddress})
 	}
 	WaitELNodesUp(ctx, d.t, d.l2Engines, 10*time.Second)
 }
