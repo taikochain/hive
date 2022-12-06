@@ -37,7 +37,7 @@ type LegacyTestEnv struct {
 
 // runHTTP runs the given test function using the HTTP RPC client.
 func RunHTTP(t *hivesim.T, c *hivesim.Client, vault *taiko.Vault, g *core.Genesis, fn func(*LegacyTestEnv)) {
-	// This sets up debug logging of the requests and responses.
+	// Set up the debug logger of the requests and responses.
 	client := &http.Client{
 		Transport: &taiko.LoggingRoundTrip{
 			T:     t,
