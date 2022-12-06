@@ -14,11 +14,12 @@ import (
 )
 
 var allTests = []*taiko.TestSpec{
-	// {Name: "propose 2048 blocks at once", Run: testPropose2048Blocks},
-	// {Name: "propose bad blocks", Run: testProposeBadBlocks},
-	// {Name: "driver sync from zero height", Run: testDriverSyncFromZeroHeight},
-	// {Name: "driver sync from some none zero height", Run: testDriverSyncFromNoneZeroHeight},
-	{Name: "generate and prove first l2 Block", Run: testGenProveFirstL2Block},
+	{Name: "first l2", Description: "generate first verified L2 block", Run: genFirstVerifiedL2Block},
+	{Name: "invalid txList", Description: "get invalid txList from l2-engine", Run: genInvalidL2Block},
+	{Name: "L1 reorg", Description: "driver handle L1 re-org", Run: driverHandleL1Reorg},
+	{Name: "sync from L1", Description: "completes sync purely from L1 data to generate l2 block", Run: syncAllFromL1},
+	{Name: "sync by p2p", Description: "l2 chain head determined by L1, but sync block completes through taiko-geth P2P", Run: syncByP2P},
+	{Name: "propose 2048 blocks at once", Description: "", Run: testPropose2048Blocks},
 }
 
 func main() {
@@ -40,8 +41,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		d := taiko.NewDevnet(t, &taiko.NodesConfig{
-			L1EngineCnt: 1, L2EngineCnt: 1, ProposerCnt: 1, DriverCnt: 1, ProverCnt: 1})
+		d := taiko.NewDevnet(t)
 		require.NoError(t, d.StartSingleNodeNet(ctx))
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,
@@ -51,7 +51,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	}
 }
 
-func testGenProveFirstL2Block(t *hivesim.T, env *taiko.TestEnv) {
+func genFirstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
 	d := env.DevNet
 	l2 := d.GetL2ELNode(0)
 	address := d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
@@ -81,21 +81,23 @@ func testGenProveFirstL2Block(t *hivesim.T, env *taiko.TestEnv) {
 			return
 		}
 	}
-
 }
 
+func genInvalidL2Block(t *hivesim.T, evn *taiko.TestEnv) {
+	// TODO
+}
+
+func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
+	// TODO
+}
+
+func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
+	// TODO
+}
+
+func syncByP2P(t *hivesim.T, env *taiko.TestEnv) {
+	// TODO
+}
 func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
-}
-
-func testProposeBadBlocks(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
-}
-
-func testDriverSyncFromZeroHeight(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
-}
-
-func testDriverSyncFromNoneZeroHeight(t *hivesim.T, env *taiko.TestEnv) {
 	// TODO
 }
