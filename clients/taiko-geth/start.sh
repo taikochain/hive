@@ -68,7 +68,6 @@ set -e
 echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
 
 geth \
-  --nodiscover \
   --gcmode archive \
   --syncmode full \
   --datadir /data/taioko-geth \
