@@ -41,8 +41,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		d := taiko.NewDevnet(t)
-		require.NoError(t, d.StartSingleNodeNet(ctx))
+		d := taiko.NewDevnet(ctx, t)
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,
 			Tests:       tests,

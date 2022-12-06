@@ -40,22 +40,15 @@ type Devnet struct {
 	L2Genesis *core.Genesis
 }
 
-func NewDevnet(t *hivesim.T) *Devnet {
-	d := &Devnet{
-		t: t,
-		c: DefaultConfig,
-	}
-	return d
-}
-
-func (d *Devnet) StartSingleNodeNet(ctx context.Context) error {
+func NewDevnet(ctx context.Context, t *hivesim.T) *Devnet {
+	d := &Devnet{t: t, c: DefaultConfig}
 	d.Init()
-	d.AddL1ELNode(ctx, 0)
-	d.AddL2ELNode(ctx, 0)
-	d.AddDriverNode(ctx, d.l1Engines[0], d.l2Engines[0])
-	d.AddProverNode(ctx, d.l1Engines[0], d.l2Engines[0])
-	d.AddProposerNode(ctx, d.l1Engines[0], d.l2Engines[0])
-	return nil
+	l1 := d.AddL1ELNode(ctx, 0)
+	l2 := d.AddL2ELNode(ctx, 0)
+	d.AddDriverNode(ctx, l1, l2)
+	d.AddProverNode(ctx, l1, l2)
+	d.AddProposerNode(ctx, l1, l2)
+	return d
 }
 
 // Init initializes the network
@@ -88,10 +81,7 @@ func getL1Genesis() (*core.Genesis, error) {
 }
 
 // AddL1ELNode starts a eth1 image and add it to the network
-func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.StartOption) {
-	d.Lock()
-	defer d.Unlock()
-
+func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.StartOption) *ELNode {
 	if len(d.clients.L1) == 0 {
 		d.t.Fatal("no eth1 client types found")
 	}
@@ -103,8 +93,13 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.Star
 	c := d.clients.L1[Idx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L1.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
-	d.l1Engines = append(d.l1Engines, n)
 	d.deployL1Contracts(ctx, n)
+
+	d.Lock()
+	defer d.Unlock()
+	d.l1Engines = append(d.l1Engines, n)
+
+	return n
 }
 
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
@@ -114,13 +109,12 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	return d.l1Engines[idx]
 }
 
-func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesim.StartOption) {
-	d.Lock()
-	defer d.Unlock()
+func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesim.StartOption) *ELNode {
 	opts = append(opts, hivesim.Params{
 		envTaikoNetworkID: strconv.FormatUint(d.c.L2.NetworkID, 10),
 		envTaikoJWTSecret: d.c.L2.JWTSecret,
 	})
+	d.Lock()
 	for _, n := range d.l2Engines {
 		enodeURL, err := n.EnodeURL()
 		if err != nil {
@@ -130,19 +124,18 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 			envTaikoBootNode: enodeURL,
 		})
 	}
+	d.Unlock()
 	c := d.clients.L2[clientIdx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L2.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
+	d.Lock()
+
+	defer d.Unlock()
 	d.l2Engines = append(d.l2Engines, n)
+	return n
 }
 
-func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) {
-	d.Lock()
-	defer d.Unlock()
-
-	if len(d.l2Engines)-len(d.drivers) != 1 {
-		d.t.Fatalf("l2 engines number must equals driver number")
-	}
+func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) *DriverNode {
 	c := d.clients.Driver[0]
 	opts = append(opts, hivesim.Params{
 		envTaikoRole:                            taikoDriver,
@@ -155,7 +148,12 @@ func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hive
 		"HIVE_CHECK_LIVE_PORT":                  "0",
 		envTaikoJWTSecret:                       d.c.L2.JWTSecret,
 	})
-	d.drivers = append(d.drivers, &DriverNode{d.t.StartClient(c.Name, opts...)})
+	n := &DriverNode{d.t.StartClient(c.Name, opts...)}
+
+	d.Lock()
+	defer d.Unlock()
+	d.drivers = append(d.drivers, n)
+	return n
 }
 
 func (d *Devnet) GetL2ELNode(idx int) *ELNode {
@@ -166,10 +164,7 @@ func (d *Devnet) GetL2ELNode(idx int) *ELNode {
 	return d.l2Engines[idx]
 }
 
-func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) {
-	d.Lock()
-	defer d.Unlock()
-
+func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) *ProposerNode {
 	if len(d.clients.Proposer) == 0 {
 		d.t.Fatalf("no taiko proposer client types found")
 	}
@@ -192,16 +187,17 @@ func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) {
 		})
 	}
 	c := d.clients.Proposer[0]
-	d.proposers = append(d.proposers, &ProposerNode{d.t.StartClient(c.Name, opts...)})
-}
-
-func (d *Devnet) AddProverNode(ctx context.Context, l1, l2 *ELNode) {
+	n := &ProposerNode{d.t.StartClient(c.Name, opts...)}
 	d.Lock()
 	defer d.Unlock()
+	d.proposers = append(d.proposers, n)
+	return n
 
+}
+
+func (d *Devnet) AddProverNode(ctx context.Context, l1, l2 *ELNode) *ProverNode {
 	if len(d.clients.Prover) == 0 {
 		d.t.Fatalf("no taiko prover client types found")
-		return
 	}
 	if err := d.addWhitelist(ctx, l1.EthClient()); err != nil {
 		d.t.Fatalf("add whitelist failed, err=%v", err)
@@ -217,7 +213,11 @@ func (d *Devnet) AddProverNode(ctx context.Context, l1, l2 *ELNode) {
 		"HIVE_CHECK_LIVE_PORT":   "0",
 	})
 	c := d.clients.Prover[0]
-	d.provers = append(d.provers, &ProverNode{d.t.StartClient(c.Name, opts...)})
+	n := &ProverNode{d.t.StartClient(c.Name, opts...)}
+	d.Lock()
+	defer d.Unlock()
+	d.provers = append(d.provers, n)
+	return n
 }
 
 func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error {
