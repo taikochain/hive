@@ -42,7 +42,7 @@ func WaitReceiptOK(ctx context.Context, client *ethclient.Client, hash common.Ha
 	return WaitReceipt(ctx, client, hash, types.ReceiptStatusSuccessful)
 }
 
-func WaitReceiptFail(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+func WaitReceiptFailed(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
 	return WaitReceipt(ctx, client, hash, types.ReceiptStatusFailed)
 }
 

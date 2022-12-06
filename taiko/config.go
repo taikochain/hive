@@ -83,10 +83,10 @@ type L2Config struct {
 	ChainID   *big.Int
 	NetworkID uint64
 
-	Throwawayer           *Account // l2 driver account for throwaway invalid block
+	Throwawayer           *Account // L2 driver account for throwaway invalid block
 	SuggestedFeeRecipient *Account // suggested fee recipient account
-	Prover                *Account // l1 prover account for prove zk proof
-	Proposer              *Account // l1 proposer account for propose l1 txList
+	Prover                *Account // L1 prover account for prove zk proof
+	Proposer              *Account // L1 proposer account for propose L1 txList
 	RollupAddress         common.Address
 	BridgeAddress         common.Address
 	VaultAddress          common.Address

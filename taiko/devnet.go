@@ -18,7 +18,7 @@ import (
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
-// Devnet is a taiko network with all necessary components, e.g. l1, l2, driver, proposer, prover etc.
+// Devnet is a taiko network with all necessary components, e.g. L1, L2, driver, proposer, prover etc.
 type Devnet struct {
 	sync.Mutex
 	t       *hivesim.T
@@ -104,7 +104,7 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.Star
 
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	if idx < 0 || idx >= len(d.l1Engines) {
-		d.t.Fatalf("only have %d l1 nodes, cannot find %d", len(d.l1Engines), idx)
+		d.t.Fatalf("only have %d L1 nodes, cannot find %d", len(d.l1Engines), idx)
 	}
 	return d.l1Engines[idx]
 }
@@ -128,8 +128,8 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 	c := d.clients.L2[clientIdx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L2.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
-	d.Lock()
 
+	d.Lock()
 	defer d.Unlock()
 	d.l2Engines = append(d.l2Engines, n)
 	return n

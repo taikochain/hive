@@ -58,7 +58,7 @@ func NewVault(t *hivesim.T, chainCfg *params.ChainConfig) *Vault {
 func (v *Vault) GenerateKey() common.Address {
 	key, err := crypto.GenerateKey()
 	if err != nil {
-		panic(fmt.Errorf("can'T generate account key: %v", err))
+		panic(fmt.Errorf("can't generate account key: %v", err))
 	}
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 
