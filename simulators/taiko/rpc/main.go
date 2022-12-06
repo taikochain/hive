@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
-	"github.com/stretchr/testify/require"
 )
 
 type testSpec struct {
@@ -91,15 +90,7 @@ func runAllTests(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	c := &taiko.NodesConfig{
-		L1EngineCnt: 1,
-		L2EngineCnt: 1,
-		ProposerCnt: 1,
-		DriverCnt:   1,
-		ProverCnt:   1,
-	}
-	d := taiko.NewDevnet(t, c)
-	require.NoError(t, d.StartSingleNodeNet(ctx))
+	d := taiko.NewDevnet(ctx, t)
 	l2 := d.GetL2ELNode(0)
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.

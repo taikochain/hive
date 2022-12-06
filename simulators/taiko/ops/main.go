@@ -41,8 +41,7 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		d := taiko.NewDevnet(t)
-		require.NoError(t, d.StartSingleNodeNet(ctx))
+		d := taiko.NewDevnet(ctx, t)
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,
 			Tests:       tests,
@@ -53,17 +52,15 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 
 func genFirstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
 	d := env.DevNet
-	l2 := d.GetL2ELNode(0)
-	address := d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
-	t.Logf("address=%v", address)
-	l1 := d.GetL1ELNode(0)
+	l1, l2 := d.GetL1ELNode(0), d.GetL2ELNode(0)
+	d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
 	taikoL1, err := l1.L1TaikoClient()
 	require.Nil(t, err)
 
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: env.Context}
-	sink := make(chan *bindings.TaikoL1ClientBlockProven)
-	sub, err := taikoL1.WatchBlockProven(opt, sink, []*big.Int{big.NewInt(1)})
+	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
+	sub, err := taikoL1.WatchBlockProven(opt, eventCh, []*big.Int{big.NewInt(1)})
 	if err != nil {
 		t.Fatal("Failed to watch prove event", err)
 	}
@@ -71,7 +68,7 @@ func genFirstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
 		select {
 		case err := <-sub.Err():
 			t.Fatal("Failed to watch prove event", err)
-		case e := <-sink:
+		case e := <-eventCh:
 			if e.Id.Uint64() == 1 {
 				t.Log("all success")
 				return
