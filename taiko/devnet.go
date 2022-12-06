@@ -36,7 +36,6 @@ type Devnet struct {
 	L1Vault *Vault
 	L2Vault *Vault
 
-	L1Genesis *core.Genesis
 	L2Genesis *core.Genesis
 }
 
@@ -58,14 +57,9 @@ func (d *Devnet) Init() {
 		d.t.Fatalf("failed to retrieve list of client types: %v", err)
 	}
 	d.clients = Roles(d.t, clientTypes)
-
-	d.L1Genesis, err = getL1Genesis()
-	if err != nil {
-		d.t.Fatal(err)
-	}
 	d.L2Genesis = core.TaikoGenesisBlock(d.c.L2.NetworkID)
-	d.L1Vault = NewVault(d.t, d.L1Genesis.Config)
-	d.L2Vault = NewVault(d.t, d.L2Genesis.Config)
+	d.L1Vault = NewVault(d.t, d.c.L1.ChainID)
+	d.L2Vault = NewVault(d.t, d.c.L2.ChainID)
 }
 
 func getL1Genesis() (*core.Genesis, error) {
