@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 
 	"github.com/ethereum/go-ethereum"
@@ -35,8 +34,8 @@ var (
 // The purpose of the vault is allowing tests to run concurrently without worrying about
 // nonce assignment and unexpected balance changes.
 type Vault struct {
-	t        *hivesim.T
-	chainCfg *params.ChainConfig
+	t       *hivesim.T
+	chainID *big.Int
 
 	// This tracks the account nonce of the vault account.
 	nonce uint64
@@ -46,10 +45,10 @@ type Vault struct {
 	mu sync.Mutex
 }
 
-func NewVault(t *hivesim.T, chainCfg *params.ChainConfig) *Vault {
+func NewVault(t *hivesim.T, chainID *big.Int) *Vault {
 	return &Vault{
 		t:        t,
-		chainCfg: chainCfg,
+		chainID:  chainID,
 		accounts: make(map[common.Address]*ecdsa.PrivateKey),
 	}
 }
@@ -82,7 +81,7 @@ func (v *Vault) SignTransaction(sender common.Address, tx *types.Transaction) (*
 	if key == nil {
 		return nil, fmt.Errorf("sender account %v not in vault", sender)
 	}
-	signer := types.LatestSigner(v.chainCfg)
+	signer := types.LatestSignerForChainID(v.chainID)
 	return types.SignTx(tx, signer, key)
 }
 
@@ -124,7 +123,7 @@ func (v *Vault) InsertKey(key *ecdsa.PrivateKey) {
 }
 
 func (v *Vault) KeyedTransactor(addr common.Address) *bind.TransactOpts {
-	opts, err := bind.NewKeyedTransactorWithChainID(v.FindKey(addr), v.chainCfg.ChainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(v.FindKey(addr), v.chainID)
 	if err != nil {
 		v.t.Fatal("error getting keyed transactor:", err)
 	}
@@ -143,7 +142,7 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 		To:       &recipient,
 		Value:    amount,
 	})
-	signer := types.LatestSigner(v.chainCfg)
+	signer := types.LatestSignerForChainID(v.chainID)
 	signedTx, err := types.SignTx(tx, signer, vaultKey)
 	if err != nil {
 		v.t.Fatal("can'T sign vault funding tx:", err)
