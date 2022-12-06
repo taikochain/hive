@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
@@ -61,6 +62,7 @@ func genFirstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
 	opt := &bind.WatchOpts{Start: &start, Context: env.Context}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
 	sub, err := taikoL1.WatchBlockProven(opt, eventCh, []*big.Int{big.NewInt(1)})
+	defer sub.Unsubscribe()
 	if err != nil {
 		t.Fatal("Failed to watch prove event", err)
 	}
@@ -89,7 +91,30 @@ func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
 }
 
 func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
+	d := env.DevNet
+	l2 := d.AddL2ELNode(env.Context, 0)
+	d.AddDriverNode(env.Context, d.GetL1ELNode(0), l2)
+
+	ch := make(chan *types.Header)
+	cli, err := l2.RawRpcClient()
+	require.NoError(t, err)
+	sub, err := cli.SubscribeNewHead(env.Context, ch)
+	require.NoError(t, err)
+	defer sub.Unsubscribe()
+	for {
+		for {
+			select {
+			case h := <-ch:
+				t.Logf("get new L2 header,height=%v", h.Number)
+				return
+			case err := <-sub.Err():
+				require.NoError(t, err)
+			case <-env.Context.Done():
+				t.Fatalf("program close before test finish")
+			}
+		}
+	}
+
 }
 
 func syncByP2P(t *hivesim.T, env *taiko.TestEnv) {

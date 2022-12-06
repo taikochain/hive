@@ -115,10 +115,11 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 		envTaikoJWTSecret: d.c.L2.JWTSecret,
 	})
 	d.Lock()
-	for _, n := range d.l2Engines {
+	for i, n := range d.l2Engines {
 		enodeURL, err := n.EnodeURL()
 		if err != nil {
-			d.t.Fatalf("failed to get enode url of the first taiko geth node, error: %w", err)
+			d.t.Fatalf("failed to get enode url of the %d taiko geth node, error: %v", i, err)
+			return nil
 		}
 		opts = append(opts, hivesim.Params{
 			envTaikoBootNode: enodeURL,
