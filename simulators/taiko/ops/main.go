@@ -14,7 +14,7 @@ import (
 )
 
 var allTests = []*taiko.TestSpec{
-	{Name: "first l2", Description: "generate first verified L2 block", Run: genFirstVerifiedL2Block},
+	{Name: "first L2", Description: "generate first verified L2 block", Run: genFirstVerifiedL2Block},
 	{Name: "invalid txList", Description: "get invalid txList from l2-engine", Run: genInvalidL2Block},
 	{Name: "L1 reorg", Description: "driver handle L1 re-org", Run: driverHandleL1Reorg},
 	{Name: "sync from L1", Description: "completes sync purely from L1 data to generate l2 block", Run: syncAllFromL1},
