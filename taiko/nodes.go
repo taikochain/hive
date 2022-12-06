@@ -9,7 +9,7 @@ import (
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
-// These ports are exposed on the docker containers, and accessible via the docker network that the hive test runs in.
+// These ports are exposed by the docker containers, and accessible via the docker network that the hive test runs in.
 // These are container-ports: they are not exposed to the host,
 // and so multiple containers can use the same port.
 // Some eth1 client definitions hardcode them, others make them configurable, these should not be changed.
