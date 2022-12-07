@@ -4,7 +4,6 @@ go 1.18
 
 replace (
 	github.com/ethereum/go-ethereum v1.10.25 => github.com/taikochain/taiko-geth v0.0.0-20221129083453-a98101c3f5cd
-	github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1 => github.com/taikochain/hive v0.0.0-20220727121216-02ad57aaf9c1
 )
 
 require (
