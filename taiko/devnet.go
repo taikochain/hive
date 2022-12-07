@@ -41,17 +41,7 @@ type Devnet struct {
 
 func NewDevnet(ctx context.Context, t *hivesim.T) *Devnet {
 	d := &Devnet{t: t, c: DefaultConfig}
-	d.Init()
-	l1 := d.AddL1ELNode(ctx, 0)
-	l2 := d.AddL2ELNode(ctx, 0)
-	d.AddDriverNode(ctx, l1, l2)
-	d.AddProverNode(ctx, l1, l2)
-	d.AddProposerNode(ctx, l1, l2)
-	return d
-}
 
-// Init initializes the network
-func (d *Devnet) Init() {
 	clientTypes, err := d.t.Sim.ClientTypes()
 	if err != nil {
 		d.t.Fatalf("failed to retrieve list of client types: %v", err)
@@ -60,6 +50,13 @@ func (d *Devnet) Init() {
 	d.L2Genesis = core.TaikoGenesisBlock(d.c.L2.NetworkID)
 	d.L1Vault = NewVault(d.t, d.c.L1.ChainID)
 	d.L2Vault = NewVault(d.t, d.c.L2.ChainID)
+
+	l1 := d.AddL1ELNode(ctx, 0)
+	l2 := d.AddL2ELNode(ctx, 0)
+	d.AddDriverNode(ctx, l1, l2)
+	d.AddProverNode(ctx, l1, l2)
+	d.AddProposerNode(ctx, l1, l2)
+	return d
 }
 
 func getL1Genesis() (*core.Genesis, error) {
