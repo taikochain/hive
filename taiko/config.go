@@ -21,7 +21,7 @@ var DefaultConfig = &Config{
 		NetworkID: 31336,
 
 		Deployer:         deployAccount,
-		RollupAddress:    common.HexToAddress("0x232e1128a21BBfFbC8d6BefaCb10137F37A653a0"),
+		RollupAddress:    common.HexToAddress("0xa7dF1d30f6456Dc72cE18fE011896105651a1f86"),
 		BridgeAddress:    common.HexToAddress("0xAE4C9bD0f7AE5398Df05043079596E2BF0079CE9"),
 		VaultAddress:     common.HexToAddress("0x5E506e2E0EaD3Ff9d93859A5879cAA02582f77c3"),
 		TestERC20Address: common.HexToAddress("0x0000000000000000000000000000000000000000"),

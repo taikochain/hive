@@ -63,8 +63,9 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.Star
 		d.t.Fatal("no eth1 client types found")
 	}
 	opts = append(opts, hivesim.Params{
-		envTaikoL1ChainID:      d.c.L1.ChainID.String(),
-		envTaikoL1CliquePeriod: strconv.FormatUint(d.c.L1.MineInterval, 10),
+		envTaikoL1ChainID: d.c.L1.ChainID.String(),
+		envNetworkID:      strconv.FormatUint(d.c.L1.NetworkID, 10),
+		envCliquePeriod:   strconv.FormatUint(d.c.L1.MineInterval, 10),
 	})
 
 	c := d.clients.L1[Idx]
@@ -88,8 +89,10 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 
 func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesim.StartOption) *ELNode {
 	opts = append(opts, hivesim.Params{
-		envTaikoNetworkID: strconv.FormatUint(d.c.L2.NetworkID, 10),
 		envTaikoJWTSecret: d.c.L2.JWTSecret,
+		envNodeType:       "full",
+		envNetworkID:      strconv.FormatUint(d.c.L2.NetworkID, 10),
+		envLogLevel:       "4",
 	})
 	d.Lock()
 	for i, n := range d.l2Engines {
@@ -99,7 +102,7 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 			return nil
 		}
 		opts = append(opts, hivesim.Params{
-			envTaikoBootNode: enodeURL,
+			envBootNode: enodeURL,
 		})
 	}
 	d.Unlock()
