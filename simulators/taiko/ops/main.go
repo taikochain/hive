@@ -90,6 +90,8 @@ func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
 	// TODO
 }
 
+// Start a new driver and taiko-geth, the driver is connected to L1 that already has a propose block,
+// and the driver will synchronize and process the propose event on L1 to let taiko-geth generate a new block.
 func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
 	d := env.DevNet
 	l2 := d.AddL2ELNode(env.Context, 0)
@@ -105,7 +107,9 @@ func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
 		for {
 			select {
 			case h := <-ch:
-				t.Logf("get new L2 header,height=%v", h.Number)
+				if h.Number.Uint64() > 0 {
+					return
+				}
 				return
 			case err := <-sub.Err():
 				require.NoError(t, err)
