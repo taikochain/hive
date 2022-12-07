@@ -15,7 +15,7 @@ import (
 )
 
 var allTests = []*taiko.TestSpec{
-	{Name: "first L2", Description: "generate first verified L2 block", Run: genFirstVerifiedL2Block},
+	{Name: "first L2", Description: "generate first verified L2 block", Run: firstVerifiedL2Block},
 	{Name: "invalid txList", Description: "get invalid txList from L2-engine", Run: genInvalidL2Block},
 	{Name: "L1 reorg", Description: "driver handle L1 re-org", Run: driverHandleL1Reorg},
 	{Name: "sync from L1", Description: "completes sync purely from L1 data to generate L2 block", Run: syncAllFromL1},
@@ -42,7 +42,10 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
+		// generate a L2 transaction
 		d := taiko.NewDevnet(ctx, t)
+		d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
+
 		taiko.RunTests(ctx, t, &taiko.RunTestsParams{
 			Devnet:      d,
 			Tests:       tests,
@@ -51,13 +54,11 @@ func runAllTests(tests []*taiko.TestSpec) func(t *hivesim.T) {
 	}
 }
 
-func genFirstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
+// wait the a L2 transaction be proposed and proved as a L2 block.
+func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) {
 	d := env.DevNet
-	l1, l2 := d.GetL1ELNode(0), d.GetL2ELNode(0)
-	d.L2Vault.CreateAccount(env.Context, l2.EthClient(), big.NewInt(params.Ether))
-	taikoL1, err := l1.L1TaikoClient()
+	taikoL1, err := d.GetL1ELNode(0).L1TaikoClient()
 	require.Nil(t, err)
-
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: env.Context}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
