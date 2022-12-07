@@ -2,8 +2,6 @@ package taiko
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"math/big"
 	"strconv"
 	"sync"
@@ -57,18 +55,6 @@ func NewDevnet(ctx context.Context, t *hivesim.T) *Devnet {
 	d.AddProverNode(ctx, l1, l2)
 	d.AddProposerNode(ctx, l1, l2)
 	return d
-}
-
-func getL1Genesis() (*core.Genesis, error) {
-	g := new(core.Genesis)
-	data, err := ioutil.ReadFile("/genesis.json")
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(data, g); err != nil {
-		return nil, err
-	}
-	return g, nil
 }
 
 // AddL1ELNode starts a eth1 image and add it to the network
