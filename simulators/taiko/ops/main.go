@@ -12,14 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var allTests = []*taiko.TestSpec{
-	// {Name: "invalid txList", Description: "get invalid txList from L2-engine", Run: genInvalidL2Block},
-	// {Name: "L1 reorg", Description: "driver handle L1 re-org", Run: driverHandleL1Reorg},
-	// {},
-	// {Name: "sync by p2p", Description: "L2 chain head determined by L1, but sync block completes through taiko-geth P2P", Run: syncByP2P},
-	// {Name: "propose 2048 blocks at once", Description: "", Run: testPropose2048Blocks},
-}
-
 func main() {
 	suit := hivesim.Suite{
 		Name:        "taiko ops",
