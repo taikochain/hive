@@ -25,11 +25,11 @@ func WaitELNodesUp(ctx context.Context, t *hivesim.T, node *ELNode, timeout time
 	}
 }
 
-func WaitBlock(ctx context.Context, t *hivesim.T, client *ethclient.Client, n uint64) error {
+func WaitBlock(ctx context.Context, t *hivesim.T, client *ethclient.Client, n *big.Int) error {
 	for {
 		height, err := client.BlockNumber(ctx)
 		require.NoError(t, err)
-		if height < n {
+		if height < n.Uint64() {
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
@@ -38,7 +38,10 @@ func WaitBlock(ctx context.Context, t *hivesim.T, client *ethclient.Client, n ui
 	return nil
 }
 
-func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int) common.Hash {
+func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int, needWait bool) common.Hash {
+	if needWait {
+		WaitBlock(ctx, t, cli, num)
+	}
 	block, err := cli.BlockByNumber(ctx, num)
 	require.NoError(t, err)
 	return block.Hash()
@@ -112,12 +115,12 @@ func WaitNewHead(ctx context.Context, t *hivesim.T, cli *ethclient.Client, wantH
 	}
 }
 
-func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, wantHeight []*big.Int) {
+func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, blockHash common.Hash) {
 	taikoL1 := l1.L1TaikoClient(t)
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: ctx}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
-	sub, err := taikoL1.WatchBlockProven(opt, eventCh, wantHeight)
+	sub, err := taikoL1.WatchBlockProven(opt, eventCh, nil)
 	defer sub.Unsubscribe()
 	if err != nil {
 		t.Fatal("Failed to watch prove event", err)
@@ -127,7 +130,7 @@ func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, wantHeight []
 		case err := <-sub.Err():
 			t.Fatal("Failed to watch prove event", err)
 		case e := <-eventCh:
-			if e.Id.Uint64() == 1 {
+			if e.BlockHash == blockHash {
 				return
 			}
 		case <-ctx.Done():

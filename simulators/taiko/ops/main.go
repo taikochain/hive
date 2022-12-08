@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
@@ -57,7 +58,8 @@ func launchTest(t *hivesim.T) {
 // wait the a L2 transaction be proposed and proved as a L2 block.
 func firstVerifiedL2Block(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), []*big.Int{big.NewInt(1)})
+		blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(), common.Big1, true)
+		taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), blockHash)
 	}
 }
 
@@ -77,7 +79,7 @@ func syncAllFromL1(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *h
 		defer cancel()
 		l2 := d.AddL2ELNode(ctx, 0, false)
 		d.AddDriverNode(ctx, d.GetL1ELNode(0), l2, false)
-		taiko.WaitBlock(ctx, t, l2.EthClient(), 1)
+		taiko.WaitBlock(ctx, t, l2.EthClient(), common.Big1)
 	}
 }
 

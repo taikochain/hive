@@ -74,7 +74,7 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, l2 *ELNode, opts ...
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L1.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
 
-	l2GenesisHash := GetBlockHashByNumber(ctx, d.t, l2.EthClient(), common.Big0)
+	l2GenesisHash := GetBlockHashByNumber(ctx, d.t, l2.EthClient(), common.Big0, false)
 	d.deployL1Contracts(ctx, n, l2GenesisHash)
 
 	d.Lock()
