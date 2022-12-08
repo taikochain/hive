@@ -112,6 +112,6 @@ func syncByP2P(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hives
 	}
 }
 
-func testPropose2048Blocks(t *hivesim.T, env *taiko.TestEnv) {
+func ProposeTooManyBlocks(t *hivesim.T, env *taiko.TestEnv) {
 	// TODO
 }
