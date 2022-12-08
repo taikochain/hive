@@ -53,6 +53,16 @@ func launchTest(t *hivesim.T) {
 		Description: "completes sync purely from L1 data to generate L2 block",
 		Run:         syncAllFromL1(t, ctx, d),
 	})
+	// generate the second L2 transaction
+	d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
+	blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(), common.Big2, true)
+	taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), blockHash)
+
+	t.Run(hivesim.TestSpec{
+		Name:        "sync by p2p",
+		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth P2P",
+		Run:         syncByP2P(t, ctx, d),
+	})
 }
 
 // wait the a L2 transaction be proposed and proved as a L2 block.
@@ -85,7 +95,11 @@ func syncAllFromL1(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *h
 
 func syncByP2P(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-
+		ctx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		l2 := d.AddL2ELNode(ctx, 0, true)
+		d.AddDriverNode(ctx, d.GetL1ELNode(0), l2, true)
+		taiko.WaitBlock(ctx, t, l2.RawRpcClient(t), common.Big2)
 	}
 }
 
