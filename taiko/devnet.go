@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -50,16 +51,16 @@ func NewDevnet(ctx context.Context, t *hivesim.T) *Devnet {
 	d.L1Vault = NewVault(d.t, d.c.L1.ChainID)
 	d.L2Vault = NewVault(d.t, d.c.L2.ChainID)
 
-	l1 := d.AddL1ELNode(ctx, 0)
 	l2 := d.AddL2ELNode(ctx, 0, false)
-	d.AddDriverNode(ctx, l1, l2)
+	l1 := d.AddL1ELNode(ctx, 0, l2)
+	d.AddDriverNode(ctx, l1, l2, false)
 	d.AddProverNode(ctx, l1, l2)
 	d.AddProposerNode(ctx, l1, l2)
 	return d
 }
 
 // AddL1ELNode starts a eth1 image and add it to the network
-func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.StartOption) *ELNode {
+func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, l2 *ELNode, opts ...hivesim.StartOption) *ELNode {
 	if len(d.clients.L1) == 0 {
 		d.t.Fatal("no eth1 client types found")
 	}
@@ -72,7 +73,9 @@ func (d *Devnet) AddL1ELNode(ctx context.Context, Idx uint, opts ...hivesim.Star
 	c := d.clients.L1[Idx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L1.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
-	d.deployL1Contracts(ctx, n)
+
+	l2GenesisHash := GetBlockHashByNumber(ctx, d.t, l2.EthClient(), common.Big0)
+	d.deployL1Contracts(ctx, n, l2GenesisHash)
 
 	d.Lock()
 	defer d.Unlock()
@@ -125,10 +128,10 @@ func (d *Devnet) getBootNodeParam() hivesim.StartOption {
 		envBootNode: strings.Join(urls, ","),
 	}
 }
-func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) *DriverNode {
+func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, enableP2P bool, opts ...hivesim.StartOption) *DriverNode {
 	c := d.clients.Driver[0]
 	opts = append(opts, hivesim.Params{
-		envTaikoRole:                            taikoDriver,
+		envTaikoRole:                            "driver",
 		envTaikoL1RPCEndpoint:                   l1.WsRpcEndpoint(),
 		envTaikoL2RPCEndpoint:                   l2.WsRpcEndpoint(),
 		envTaikoL2EngineEndpoint:                l2.EngineEndpoint(),
@@ -138,6 +141,11 @@ func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hive
 		"HIVE_CHECK_LIVE_PORT":                  "0",
 		envTaikoJWTSecret:                       d.c.L2.JWTSecret,
 	})
+	if enableP2P {
+		opts = append(opts, hivesim.Params{
+			evnTaikoEnableL2P2P: "true",
+		})
+	}
 	n := &DriverNode{d.t.StartClient(c.Name, opts...)}
 
 	d.Lock()
@@ -160,7 +168,7 @@ func (d *Devnet) AddProposerNode(ctx context.Context, l1, l2 *ELNode) *ProposerN
 	}
 	var opts []hivesim.StartOption
 	opts = append(opts, hivesim.Params{
-		envTaikoRole:                  taikoProposer,
+		envTaikoRole:                  "proposer",
 		envTaikoL1RPCEndpoint:         l1.WsRpcEndpoint(),
 		envTaikoL2RPCEndpoint:         l2.WsRpcEndpoint(),
 		envTaikoL1RollupAddress:       d.c.L1.RollupAddress.Hex(),
@@ -194,7 +202,7 @@ func (d *Devnet) AddProverNode(ctx context.Context, l1, l2 *ELNode) *ProverNode 
 	}
 	var opts []hivesim.StartOption
 	opts = append(opts, hivesim.Params{
-		envTaikoRole:             taikoProver,
+		envTaikoRole:             "prover",
 		envTaikoL1RPCEndpoint:    l1.WsRpcEndpoint(),
 		envTaikoL2RPCEndpoint:    l2.WsRpcEndpoint(),
 		envTaikoL1RollupAddress:  d.c.L1.RollupAddress.Hex(),
@@ -240,7 +248,7 @@ func (d *Devnet) addWhitelist(ctx context.Context, cli *ethclient.Client) error 
 }
 
 // deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (d *Devnet) deployL1Contracts(ctx context.Context, l1Node *ELNode) {
+func (d *Devnet) deployL1Contracts(ctx context.Context, l1Node *ELNode, l2GenesisHash common.Hash) {
 	if d.clients.Contract == nil {
 		d.t.Fatalf("no taiko protocol client types found")
 	}
@@ -248,7 +256,7 @@ func (d *Devnet) deployL1Contracts(ctx context.Context, l1Node *ELNode) {
 	opts = append(opts, hivesim.Params{
 		envTaikoPrivateKey:         d.c.L1.Deployer.PrivateKeyHex,
 		envTaikoL1DeployerAddress:  d.c.L1.Deployer.Address.Hex(),
-		envTaikoL2GenesisBlockHash: d.c.L2.GenesisBlockHash.Hex(),
+		envTaikoL2GenesisBlockHash: l2GenesisHash.Hex(),
 		envTaikoL2RollupAddress:    d.c.L2.RollupAddress.Hex(),
 		envTaikoMainnetUrl:         l1Node.HttpRpcEndpoint(),
 		envTaikoL2ChainID:          d.c.L2.ChainID.String(),

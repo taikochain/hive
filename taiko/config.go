@@ -38,7 +38,6 @@ var DefaultConfig = &Config{
 		RollupAddress:         common.HexToAddress("0x0000777700000000000000000000000000000001"),
 		BridgeAddress:         common.HexToAddress("0x0000777700000000000000000000000000000004"),
 		VaultAddress:          common.HexToAddress("0x0000777700000000000000000000000000000002"),
-		GenesisBlockHash:      common.HexToHash("0xe76a69b167bb118c79ed3be2dd2073b300acd4861e31a603c7677186b42372a5"),
 		TestERC20Address:      common.HexToAddress("0x0000777700000000000000000000000000000005"),
 		Throwawayer:           deployAccount,
 
@@ -90,7 +89,6 @@ type L2Config struct {
 	RollupAddress         common.Address
 	BridgeAddress         common.Address
 	VaultAddress          common.Address
-	GenesisBlockHash      common.Hash
 	TestERC20Address      common.Address
 
 	ProduceInvalidBlocksInterval uint64

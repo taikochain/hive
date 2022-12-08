@@ -16,27 +16,26 @@ package taiko
 
 // taiko environment variables constants
 const (
-	// common
+	// hive common
 	envNetworkID    = "HIVE_NETWORK_ID"
 	envBootNode     = "HIVE_BOOTNODE"
 	envCliquePeriod = "HIVE_CLIQUE_PERIOD"
 	envNodeType     = "HIVE_NODETYPE"
 	envLogLevel     = "HIVE_LOGLEVEL"
 
-	// L1
+	// taiko common
+	envTaikoRole            = "HIVE_TAIKO_ROLE"
 	envTaikoL1ChainID       = "HIVE_TAIKO_L1_CHAIN_ID"
+	envTaikoJWTSecret       = "HIVE_TAIKO_JWT_SECRET"
 	envTaikoL1RPCEndpoint   = "HIVE_TAIKO_L1_RPC_ENDPOINT"
+	envTaikoL2RPCEndpoint   = "HIVE_TAIKO_L2_RPC_ENDPOINT"
 	envTaikoL1RollupAddress = "HIVE_TAIKO_L1_ROLLUP_ADDRESS"
-
-	// L2
-	envTaikoL2RPCEndpoint    = "HIVE_TAIKO_L2_RPC_ENDPOINT"
-	envTaikoL2EngineEndpoint = "HIVE_TAIKO_L2_ENGINE_ENDPOINT"
-	envTaikoL2RollupAddress  = "HIVE_TAIKO_L2_ROLLUP_ADDRESS"
-
-	envTaikoRole = "HIVE_TAIKO_ROLE"
+	envTaikoL2RollupAddress = "HIVE_TAIKO_L2_ROLLUP_ADDRESS"
 
 	// driver
+	envTaikoL2EngineEndpoint                = "HIVE_TAIKO_L2_ENGINE_ENDPOINT"
 	envTaikoThrowawayBlockBuilderPrivateKey = "HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
+	evnTaikoEnableL2P2P                     = "HIVE_TAIKO_ENABLE_L2_P2P"
 
 	// proposer
 	envTaikoProposeInterval              = "HIVE_TAIKO_PROPOSE_INTERVAL"
@@ -46,7 +45,6 @@ const (
 
 	// prover
 	envTaikoProverPrivateKey = "HIVE_TAIKO_PROVER_PRIVATE_KEY"
-	envTaikoJWTSecret        = "HIVE_TAIKO_JWT_SECRET"
 
 	// deployer
 	envTaikoL1DeployerAddress  = "HIVE_TAIKO_L1_DEPLOYER_ADDRESS"

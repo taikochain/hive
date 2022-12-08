@@ -48,71 +48,69 @@
 # Taiko environment variables
 #
 #  - HIVE_TAIKO_ROLE                                 role of node
+#  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
+#  - HIVE_TAIKO_JWT_SECRET                           jwt secret used by driver and taiko geth
 #  - HIVE_TAIKO_L1_RPC_ENDPOINT                      rpc endpoint of the l1 node
 #  - HIVE_TAIKO_L2_RPC_ENDPOINT                      rpc endpoint of the l2 node
-#  - HIVE_TAIKO_L2_ENGINE_ENDPOINT                   engine endpoint of the l2 node
 #  - HIVE_TAIKO_L1_ROLLUP_ADDRESS                    rollup address of the l1 node
 #  - HIVE_TAIKO_L2_ROLLUP_ADDRESS                    rollup address of the l2 node
+
+# Driver
+#  - HIVE_TAIKO_L2_ENGINE_ENDPOINT                   engine endpoint of the l2 node
+#  - HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY  private key of the throwaway block builder
+#  - HIVE_TAIKO_ENABLE_L2_P2P                        enable taiko geth sync blocks by p2p
+
+# Proposer
 #  - HIVE_TAIKO_PROPOSER_PRIVATE_KEY                 private key of the proposer
 #  - HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT              suggested fee recipient
 #  - HIVE_TAIKO_PROPOSE_INTERVAL                     propose interval
-#  - HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY  private key of the throwaway block builder
-#  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
+
+# Prover
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
-#  - HIVE_TAIKO_JWT_SECRET                           jwt secret used by driver and taiko geth
+
+# Deployer
+# - HIVE_TAIKO_L1_DEPLOYER_ADDRESS
+# - HIVE_TAIKO_L2_GENESIS_BLOCK_HASH
+# - HIVE_TAIKO_MAINNET_URL
+# - HIVE_TAIKO_PRIVATE_KEY
+# - HIVE_TAIKO_L2_CHAIN_ID
 
 set -e
 
-echo "start $HIVE_TAIKO_ROLE ..."
+FLAGS="--l1 $HIVE_TAIKO_L1_RPC_ENDPOINT --l2 $HIVE_TAIKO_L2_RPC_ENDPOINT"
+FLAGS="$FLAGS --taikoL1 $HIVE_TAIKO_L1_ROLLUP_ADDRESS  --taikoL2 $HIVE_TAIKO_L2_ROLLUP_ADDRESS"
+# FLAGS="$FLAGS --verbosity 4"
 
 case $HIVE_TAIKO_ROLE in
-"taiko-driver")
+"driver")
   echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
-  taiko-client driver \
-    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-    --l2.engine "$HIVE_TAIKO_L2_ENGINE_ENDPOINT" \
-    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-    --l2.throwawayBlockBuilderPrivKey "$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY" \
-    --jwtSecret /jwtsecret \
-    --verbosity 4
+  FLAGS="$FLAGS --l2.engine $HIVE_TAIKO_L2_ENGINE_ENDPOINT"
+  FLAGS="$FLAGS --l2.throwawayBlockBuilderPrivKey=$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
+  FLAGS="$FLAGS --jwtSecret /jwtsecret"
+  if [ "$HIVE_TAIKO_ENABLE_L2_P2P" != "" ]; then
+    FLAGS="$FLAGS --p2p.syncVerifiedBlocks "
+  fi
+  FLAGS="$FLAGS --verbosity 3"
   ;;
-"taiko-prover")
-  taiko-client prover \
-    --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-    --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-    --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-    --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-    --zkevmRpcdEndpoint ws://127.0.0.1:18545 \
-    --zkevmRpcdParamsPath 12345 \
-    --l1.proverPrivKey "$HIVE_TAIKO_PROVER_PRIVATE_KEY" \
-    --verbosity 4 \
-    --dummy
+"prover")
+  FLAGS="$FLAGS --zkevmRpcdEndpoint=ws://127.0.0.1:18545"
+  FLAGS="$FLAGS --zkevmRpcdParamsPath=12345"
+  FLAGS="$FLAGS --l1.proverPrivKey=$HIVE_TAIKO_PROVER_PRIVATE_KEY"
+  FLAGS="$FLAGS --dummy"
+  FLAGS="$FLAGS --verbosity 4"
   ;;
-"taiko-proposer")
+"proposer")
+  FLAGS="$FLAGS --l1.proposerPrivKey=$HIVE_TAIKO_PROPOSER_PRIVATE_KEY"
+  FLAGS="$FLAGS --l2.suggestedFeeRecipient=$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT"
+  FLAGS="$FLAGS --proposeInterval=$HIVE_TAIKO_PROPOSE_INTERVAL"
+  FLAGS="$FLAGS --verbosity 4"
   if [ "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL" != "" ]; then
-    taiko-client proposer \
-      --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-      --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-      --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-      --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-      --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
-      --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
-      --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
-      --verbosity $HIVE_LOGLEVEL \
-      --produceInvalidBlocks \
-      --produceInvalidBlocksInterval "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
-  else
-    taiko-client proposer \
-      --l1 "$HIVE_TAIKO_L1_RPC_ENDPOINT" \
-      --l2 "$HIVE_TAIKO_L2_RPC_ENDPOINT" \
-      --taikoL1 "$HIVE_TAIKO_L1_ROLLUP_ADDRESS" \
-      --taikoL2 "$HIVE_TAIKO_L2_ROLLUP_ADDRESS" \
-      --l1.proposerPrivKey "$HIVE_TAIKO_PROPOSER_PRIVATE_KEY" \
-      --l2.suggestedFeeRecipient "$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT" \
-      --proposeInterval "$HIVE_TAIKO_PROPOSE_INTERVAL" \
-      --verbosity $HIVE_LOGLEVEL
+    FLAGS="$FLAGS --produceInvalidBlocks"
+    FLAGS="$FLAGS --produceInvalidBlocksInterval=$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
   fi
   ;;
 esac
+
+# Run the go-ethereum implementation with the requested flags.
+echo "Running $HIVE_TAIKO_ROLE with flags $FLAGS"
+taiko-client $HIVE_TAIKO_ROLE $FLAGS
