@@ -95,7 +95,7 @@ func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
 // and the driver will synchronize and process the propose event on L1 to let taiko-geth generate a new block.
 func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
 	d := env.DevNet
-	l2 := d.AddL2ELNode(env.Context, 0)
+	l2 := d.AddL2ELNode(env.Context, 0, false)
 	d.AddDriverNode(env.Context, d.GetL1ELNode(0), l2)
 
 	ch := make(chan *types.Header)
@@ -119,7 +119,6 @@ func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) {
 			}
 		}
 	}
-
 }
 
 func syncByP2P(t *hivesim.T, env *taiko.TestEnv) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,7 @@ func NewDevnet(ctx context.Context, t *hivesim.T) *Devnet {
 	d.L2Vault = NewVault(d.t, d.c.L2.ChainID)
 
 	l1 := d.AddL1ELNode(ctx, 0)
-	l2 := d.AddL2ELNode(ctx, 0)
+	l2 := d.AddL2ELNode(ctx, 0, false)
 	d.AddDriverNode(ctx, l1, l2)
 	d.AddProverNode(ctx, l1, l2)
 	d.AddProposerNode(ctx, l1, l2)
@@ -87,25 +88,16 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	return d.l1Engines[idx]
 }
 
-func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesim.StartOption) *ELNode {
+func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, enableBootNode bool, opts ...hivesim.StartOption) *ELNode {
 	opts = append(opts, hivesim.Params{
 		envTaikoJWTSecret: d.c.L2.JWTSecret,
 		envNodeType:       "full",
 		envNetworkID:      strconv.FormatUint(d.c.L2.NetworkID, 10),
 		envLogLevel:       "4",
 	})
-	d.Lock()
-	for i, n := range d.l2Engines {
-		enodeURL, err := n.EnodeURL()
-		if err != nil {
-			d.t.Fatalf("failed to get enode url of the %d taiko geth node, error: %v", i, err)
-			return nil
-		}
-		opts = append(opts, hivesim.Params{
-			envBootNode: enodeURL,
-		})
+	if enableBootNode {
+		opts = append(opts, d.getBootNodeParam())
 	}
-	d.Unlock()
 	c := d.clients.L2[clientIdx]
 	n := &ELNode{d.t.StartClient(c.Name, opts...), d.c.L2.RollupAddress}
 	WaitELNodesUp(ctx, d.t, n, 10*time.Second)
@@ -116,6 +108,23 @@ func (d *Devnet) AddL2ELNode(ctx context.Context, clientIdx uint, opts ...hivesi
 	return n
 }
 
+func (d *Devnet) getBootNodeParam() hivesim.StartOption {
+	d.Lock()
+	defer d.Unlock()
+
+	urls := make([]string, 0)
+	for i, n := range d.l2Engines {
+		enodeURL, err := n.EnodeURL()
+		if err != nil {
+			d.t.Fatalf("failed to get enode url of the %d taiko geth node, error: %v", i, err)
+			return nil
+		}
+		urls = append(urls, enodeURL)
+	}
+	return hivesim.Params{
+		envBootNode: strings.Join(urls, ","),
+	}
+}
 func (d *Devnet) AddDriverNode(ctx context.Context, l1, l2 *ELNode, opts ...hivesim.StartOption) *DriverNode {
 	c := d.clients.Driver[0]
 	opts = append(opts, hivesim.Params{
