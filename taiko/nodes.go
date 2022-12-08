@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
+	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
@@ -45,28 +46,28 @@ func (e *ELNode) WsRpcEndpoint() string {
 	}
 }
 
-func (e *ELNode) RawRpcClient() (*ethclient.Client, error) {
-	return ethclient.Dial(e.WsRpcEndpoint())
+func (e *ELNode) RawRpcClient(t *hivesim.T) *ethclient.Client {
+	cli, err := ethclient.Dial(e.WsRpcEndpoint())
+	require.NoError(t, err)
+	return cli
 }
 
 func (e *ELNode) EthClient() *ethclient.Client {
 	return ethclient.NewClient(e.RPC())
 }
 
-func (e *ELNode) L1TaikoClient() (*bindings.TaikoL1Client, error) {
-	c, err := e.RawRpcClient()
-	if err != nil {
-		return nil, err
-	}
-	return bindings.NewTaikoL1Client(e.TaikoAddr, c)
+func (e *ELNode) L1TaikoClient(t *hivesim.T) *bindings.TaikoL1Client {
+	c := e.RawRpcClient(t)
+	cli, err := bindings.NewTaikoL1Client(e.TaikoAddr, c)
+	require.NoError(t, err)
+	return cli
 }
 
-func (e *ELNode) L2TaikoClient() (*bindings.V1TaikoL2Client, error) {
-	c, err := e.RawRpcClient()
-	if err != nil {
-		return nil, err
-	}
-	return bindings.NewV1TaikoL2Client(e.TaikoAddr, c)
+func (e *ELNode) L2TaikoClient(t *hivesim.T) *bindings.V1TaikoL2Client {
+	c := e.RawRpcClient(t)
+	cli, err := bindings.NewV1TaikoL2Client(e.TaikoAddr, c)
+	require.NoError(t, err)
+	return cli
 }
 
 type DriverNode struct {

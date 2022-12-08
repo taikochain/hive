@@ -9,6 +9,12 @@ COPY ./simulators/taiko/ops/hive.go.work /source/go.work
 COPY ./taiko /source/taiko
 COPY ./simulators/taiko/ops /source/ops
 
+COPY ./go.mod /source/hive/go.mod
+COPY ./go.sum /source/hive/go.sum
+COPY ./hiveproxy /source/hive/hiveproxy
+COPY ./internal /source/hive/internal
+COPY ./hivesim /source/hive/hivesim
+
 WORKDIR /source/ops
 RUN go build -v .
 
