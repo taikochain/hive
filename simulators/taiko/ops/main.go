@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
+	"github.com/stretchr/testify/require"
 )
 
 var allTests = []*taiko.TestSpec{
@@ -53,10 +54,6 @@ func launchTest(t *hivesim.T) {
 		Description: "completes sync purely from L1 data to generate L2 block",
 		Run:         syncAllFromL1(t, ctx, d),
 	})
-	// generate the second L2 transaction
-	d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
-	blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(), common.Big2, true)
-	taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), blockHash)
 
 	t.Run(hivesim.TestSpec{
 		Name:        "sync by p2p",
@@ -95,8 +92,20 @@ func syncAllFromL1(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *h
 
 func syncByP2P(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, cancel := context.WithTimeout(ctx, time.Minute)
-		defer cancel()
+		// generate the second L2 transaction
+		for i := 0; i < 2; i++ {
+			d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
+		}
+		// wait the L1 state change as expected
+		l2LatestHeight, err := d.GetL2ELNode(0).EthClient().BlockNumber(ctx)
+		require.NoError(t, err)
+		taiko.WaitStateChange(t, d.GetL1ELNode(0), d.C.L1.RollupAddress, func(s *taiko.L1State) bool {
+			if s.LatestVerifiedHeight >= l2LatestHeight-1 {
+				return true
+			}
+			return false
+		})
+
 		l2 := d.AddL2ELNode(ctx, 0, true)
 		d.AddDriverNode(ctx, d.GetL1ELNode(0), l2, true)
 		taiko.WaitBlock(ctx, t, l2.RawRpcClient(t), common.Big2)
