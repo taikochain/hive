@@ -85,14 +85,12 @@ type L1State struct {
 	NextBlockId          uint64
 }
 
-func GetL1State(cli *bindings.TaikoL1Client) (*L1State, error) {
+func GetL1State(t *hivesim.T, cli *bindings.TaikoL1Client) *L1State {
 	s := new(L1State)
 	var err error
 	s.GenesisHeight, s.LatestVerifiedHeight, s.LatestVerifiedId, s.NextBlockId, err = cli.GetStateVariables(nil)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
+	require.NoError(t, err)
+	return s
 }
 
 func WaitNewHead(ctx context.Context, t *hivesim.T, cli *ethclient.Client, wantHeight *big.Int) {
@@ -137,5 +135,19 @@ func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, blockHash com
 			t.Log("test is finished before watch proved event")
 			return
 		}
+	}
+}
+
+func WaitStateChange(t *hivesim.T, l1 *ELNode, address common.Address, f func(*L1State) bool) {
+	taikoL1, err := bindings.NewTaikoL1Client(address, l1.EthClient())
+	require.NoError(t, err)
+	for i := 0; i < 60; i++ {
+		s := GetL1State(t, taikoL1)
+		t.Logf("L1 rollup state=%+v", s)
+		if f(s) {
+			break
+		}
+		time.Sleep(time.Second)
+		continue
 	}
 }
