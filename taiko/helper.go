@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
+	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
@@ -22,20 +25,26 @@ func WaitELNodesUp(ctx context.Context, t *hivesim.T, node *ELNode, timeout time
 	}
 }
 
-func WaitBlock(ctx context.Context, client *ethclient.Client, n uint64) error {
+func WaitBlock(ctx context.Context, t *hivesim.T, client *ethclient.Client, n *big.Int) error {
 	for {
 		height, err := client.BlockNumber(ctx)
-		if err != nil {
-			return err
-		}
-		if height < n {
+		require.NoError(t, err)
+		if height < n.Uint64() {
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 		break
 	}
-
 	return nil
+}
+
+func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int, needWait bool) common.Hash {
+	if needWait {
+		WaitBlock(ctx, t, cli, num)
+	}
+	block, err := cli.BlockByNumber(ctx, num)
+	require.NoError(t, err)
+	return block.Hash()
 }
 
 func WaitReceiptOK(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
@@ -84,4 +93,49 @@ func GetL1State(cli *bindings.TaikoL1Client) (*L1State, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func WaitNewHead(ctx context.Context, t *hivesim.T, cli *ethclient.Client, wantHeight *big.Int) {
+	ch := make(chan *types.Header)
+	sub, err := cli.SubscribeNewHead(ctx, ch)
+	require.NoError(t, err)
+	defer sub.Unsubscribe()
+
+	for {
+		select {
+		case h := <-ch:
+			if h.Number.Uint64() >= wantHeight.Uint64() {
+				return
+			}
+		case err := <-sub.Err():
+			require.NoError(t, err)
+		case <-ctx.Done():
+			t.Fatalf("program close before test finish")
+		}
+	}
+}
+
+func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, blockHash common.Hash) {
+	taikoL1 := l1.L1TaikoClient(t)
+	start := uint64(0)
+	opt := &bind.WatchOpts{Start: &start, Context: ctx}
+	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
+	sub, err := taikoL1.WatchBlockProven(opt, eventCh, nil)
+	defer sub.Unsubscribe()
+	if err != nil {
+		t.Fatal("Failed to watch prove event", err)
+	}
+	for {
+		select {
+		case err := <-sub.Err():
+			t.Fatal("Failed to watch prove event", err)
+		case e := <-eventCh:
+			if e.BlockHash == blockHash {
+				return
+			}
+		case <-ctx.Done():
+			t.Log("test is finished before watch proved event")
+			return
+		}
+	}
 }
