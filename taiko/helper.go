@@ -20,8 +20,8 @@ import (
 func WaitELNodesUp(ctx context.Context, t *hivesim.T, node *ELNode, timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	if _, err := node.EthClient().ChainID(ctx); err != nil {
-		t.Fatalf("engine node %s should be up within %v,err=%v", node.Type, timeout, err)
+	if _, err := node.EthClient(t).ChainID(ctx); err != nil {
+		t.Fatalf("%s should be up within %v,err=%v", node.Type, timeout, err)
 	}
 }
 
@@ -139,7 +139,7 @@ func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, blockHash com
 }
 
 func WaitStateChange(t *hivesim.T, l1 *ELNode, address common.Address, f func(*L1State) bool) {
-	taikoL1, err := bindings.NewTaikoL1Client(address, l1.EthClient())
+	taikoL1, err := bindings.NewTaikoL1Client(address, l1.EthClient(t))
 	require.NoError(t, err)
 	for i := 0; i < 60; i++ {
 		s := GetL1State(t, taikoL1)
