@@ -33,7 +33,7 @@ func launchTest(t *hivesim.T) {
 
 	// generate the first L2 transaction
 	d := taiko.NewDevnet(ctx, t)
-	d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
+	d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 
 	t.Run(hivesim.TestSpec{
 		Name:        "firstVerifiedL2Block",
@@ -57,7 +57,7 @@ func launchTest(t *hivesim.T) {
 // wait the a L2 transaction be proposed and proved as a L2 block.
 func firstVerifiedL2Block(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(), common.Big1, true)
+		blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(t), common.Big1, true)
 		taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), blockHash)
 	}
 }
@@ -78,29 +78,25 @@ func syncAllFromL1(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *h
 		defer cancel()
 		l2 := d.AddL2ELNode(ctx, 0, false)
 		d.AddDriverNode(ctx, d.GetL1ELNode(0), l2, false)
-		taiko.WaitBlock(ctx, t, l2.EthClient(), common.Big1)
+		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big1)
 	}
 }
 
 func syncByP2P(t *hivesim.T, ctx context.Context, d *taiko.Devnet) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
+		l2LatestHeight, err := d.GetL2ELNode(0).EthClient(t).BlockNumber(ctx)
+		require.NoError(t, err)
 		// generate the second L2 transaction
-		for i := 0; i < 2; i++ {
-			d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(), big.NewInt(params.Ether))
+		cnt := 2
+		for i := 0; i < cnt; i++ {
+			d.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 		}
 		// wait the L1 state change as expected
-		l2LatestHeight, err := d.GetL2ELNode(0).EthClient().BlockNumber(ctx)
-		require.NoError(t, err)
-		taiko.WaitStateChange(t, d.GetL1ELNode(0), d.C.L1.RollupAddress, func(s *taiko.L1State) bool {
-			if s.LatestVerifiedHeight >= l2LatestHeight-1 {
-				return true
-			}
-			return false
-		})
+		taiko.WaitBlock(ctx, t, d.GetL1ELNode(0).EthClient(t), big.NewInt(int64(l2LatestHeight)+int64(cnt)))
 
 		l2 := d.AddL2ELNode(ctx, 0, true)
 		d.AddDriverNode(ctx, d.GetL1ELNode(0), l2, true)
-		taiko.WaitBlock(ctx, t, l2.RawRpcClient(t), common.Big2)
+		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big2)
 	}
 }
 
