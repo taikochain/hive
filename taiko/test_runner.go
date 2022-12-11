@@ -89,13 +89,15 @@ func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
 }
 
 func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
+	env.StartL1L2ProposerDriver(t)
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	env.Net.Apply(WithProverNode(NewProverNode(t, env, l1, l2)))
+}
+
+func (env *TestEnv) StartL1L2ProposerDriver(t *hivesim.T) {
 	env.StartL1L2Proposer(t)
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	opts := []DevOption{
-		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
-		WithProverNode(NewProverNode(t, env, l1, l2)),
-	}
-	env.Net.Apply(opts...)
+	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2, false)))
 }
 
 func (env *TestEnv) StartL1L2Proposer(t *hivesim.T) {
