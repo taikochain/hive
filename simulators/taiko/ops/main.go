@@ -20,14 +20,14 @@ func main() {
 	suit.Add(&hivesim.TestSpec{
 		Name:        "single node net ops",
 		Description: "test ops on single node net",
-		Run:         launchTest,
+		Run:         singleNodeTest,
 	})
 
 	sim := hivesim.New()
 	hivesim.MustRun(sim, suit)
 }
 
-func launchTest(t *hivesim.T) {
+func singleNodeTest(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
@@ -101,6 +101,6 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 	}
 }
 
-func ProposeTooManyBlocks(t *hivesim.T, env *taiko.TestEnv) {
+func proposeTooManyBlocks(t *hivesim.T) {
 	// TODO
 }
