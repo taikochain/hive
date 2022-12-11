@@ -13,11 +13,11 @@ const (
 
 // ClientsByRole is a collection of ClientDefinitions, grouped by role.
 type ClientsByRole struct {
-	L1       []*hivesim.ClientDefinition
-	L2       []*hivesim.ClientDefinition
-	Driver   []*hivesim.ClientDefinition
-	Proposer []*hivesim.ClientDefinition
-	Prover   []*hivesim.ClientDefinition
+	L1       *hivesim.ClientDefinition
+	L2       *hivesim.ClientDefinition
+	Driver   *hivesim.ClientDefinition
+	Proposer *hivesim.ClientDefinition
+	Prover   *hivesim.ClientDefinition
 	Contract *hivesim.ClientDefinition
 }
 
@@ -25,34 +25,23 @@ func Roles(t *hivesim.T, clientDefs []*hivesim.ClientDefinition) *ClientsByRole 
 	var out ClientsByRole
 	for _, client := range clientDefs {
 		if client.HasRole(taikoL1) {
-			out.L1 = append(out.L1, client)
+			out.L1 = client
 		}
 		if client.HasRole(taikoDriver) {
-			out.Driver = append(out.Driver, client)
+			out.Driver = client
 		}
 		if client.HasRole(taikoGeth) {
-			out.L2 = append(out.L2, client)
+			out.L2 = client
 		}
 		if client.HasRole(taikoProposer) {
-			out.Proposer = append(out.Proposer, client)
+			out.Proposer = client
 		}
 		if client.HasRole(taikoProver) {
-			out.Prover = append(out.Prover, client)
+			out.Prover = client
 		}
 		if client.HasRole(taikoProtocol) {
 			out.Contract = client
 		}
-	}
-
-	l2Num, driverNum := len(out.L2), len(out.Driver)
-	if l2Num == 0 {
-		t.Fatal("no taiko geth client types found")
-	}
-	if driverNum == 0 {
-		t.Fatal("no taiko driver client types found")
-	}
-	if l2Num != driverNum {
-		t.Fatal("taiko geth node does not match driver node")
 	}
 	return &out
 }

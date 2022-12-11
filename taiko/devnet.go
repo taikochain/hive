@@ -32,51 +32,6 @@ func NewDevnet(t *hivesim.T, c *Config, opts ...DevOption) *Devnet {
 	return d
 }
 
-func WithL1Node(l1 *ELNode) DevOption {
-	return func(d *Devnet) *Devnet {
-		d.Lock()
-		defer d.Unlock()
-		d.L1Engines = append(d.L1Engines, l1)
-		return d
-	}
-}
-
-func WithL2Node(l2 *ELNode) DevOption {
-	return func(d *Devnet) *Devnet {
-		d.Lock()
-		defer d.Unlock()
-		d.L2Engines = append(d.L2Engines, l2)
-		return d
-	}
-}
-
-func WithDriverNode(n *Node) DevOption {
-	return func(d *Devnet) *Devnet {
-		d.Lock()
-		defer d.Unlock()
-		d.drivers = append(d.drivers, n)
-		return d
-	}
-}
-
-func WithProposerNode(n *Node) DevOption {
-	return func(d *Devnet) *Devnet {
-		d.Lock()
-		defer d.Unlock()
-		d.proposers = append(d.proposers, n)
-		return d
-	}
-}
-
-func WithProverNode(n *Node) DevOption {
-	return func(d *Devnet) *Devnet {
-		d.Lock()
-		defer d.Unlock()
-		d.provers = append(d.provers, n)
-		return d
-	}
-}
-
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	if idx < 0 || idx >= len(d.L1Engines) {
 		return nil
@@ -84,7 +39,7 @@ func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	return d.L1Engines[idx]
 }
 
-func (d *Devnet) GetBootNodes(t *hivesim.T) string {
+func (d *Devnet) GetL2ENodes(t *hivesim.T) string {
 	d.Lock()
 	defer d.Unlock()
 	urls := make([]string, 0)
