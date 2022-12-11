@@ -32,6 +32,12 @@ func NewDevnet(t *hivesim.T, c *Config, opts ...DevOption) *Devnet {
 	return d
 }
 
+func (d *Devnet) Apply(opts ...DevOption) {
+	for _, o := range opts {
+		o(d)
+	}
+}
+
 func (d *Devnet) GetL1ELNode(idx int) *ELNode {
 	if idx < 0 || idx >= len(d.L1Engines) {
 		return nil

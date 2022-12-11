@@ -33,7 +33,7 @@ func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Nod
 }
 
 // NewL1ELNode starts a eth1 image and add it to the network
-func NewL1ELNode(t *hivesim.T, env *TestEnv, l2 *ELNode) *ELNode {
+func NewL1ELNode(t *hivesim.T, env *TestEnv) *ELNode {
 	require.NotNil(t, env.Clients.L1)
 	opts := []NodeOption{
 		WithRole("L1Engine"),
