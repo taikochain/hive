@@ -89,25 +89,28 @@ func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
 }
 
 func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
-	env.StartBaseNet(t)
+	env.StartL1L2Proposer(t)
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	opts := []DevOption{
 		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
 		WithProverNode(NewProverNode(t, env, l1, l2)),
-		WithProposerNode(NewProposerNode(t, env, l1, l2)),
 	}
 	env.Net.Apply(opts...)
 }
 
-// baseNet contains one L1 engine node, one L2Engine node, and one proposer node.
-func (env *TestEnv) StartBaseNet(t *hivesim.T) {
+func (env *TestEnv) StartL1L2Proposer(t *hivesim.T) {
+	env.StartL1L2(t)
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	env.Net.Apply(WithProposerNode(NewProposerNode(t, env, l1, l2)))
+}
+
+func (env *TestEnv) StartL1L2(t *hivesim.T) {
 	l2 := NewL2ELNode(t, env, "")
 	l1 := NewL1ELNode(t, env)
 	deployL1Contracts(t, env, l1, l2)
 	opts := []DevOption{
 		WithL2Node(l2),
 		WithL1Node(l1),
-		WithProposerNode(NewProposerNode(t, env, l1, l2)),
 	}
 	env.Net = NewDevnet(t, env.Conf, opts...)
 }
