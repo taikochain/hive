@@ -1,6 +1,10 @@
 package taiko
 
-import "github.com/ethereum/hive/hivesim"
+import (
+	"github.com/ethereum/hive/hivesim"
+	"github.com/taikoxyz/taiko-client/proposer"
+	"github.com/taikoxyz/taiko-client/prover"
+)
 
 const (
 	taikoL1       = "taiko-l1"
@@ -44,4 +48,35 @@ func Roles(t *hivesim.T, clientDefs []*hivesim.ClientDefinition) *ClientsByRole 
 		}
 	}
 	return &out
+}
+
+func NewProposerConfig(env *TestEnv, l1, l2 *ELNode) *proposer.Config {
+	return &proposer.Config{
+		L1Endpoint:              l1.WsRpcEndpoint(),
+		L2Endpoint:              l2.WsRpcEndpoint(),
+		TaikoL1Address:          env.Conf.L1.RollupAddress,
+		TaikoL2Address:          env.Conf.L2.RollupAddress,
+		L1ProposerPrivKey:       env.Conf.L2.Proposer.PrivateKey,
+		L2SuggestedFeeRecipient: env.Conf.L2.SuggestedFeeRecipient.Address,
+		ProposeInterval:         env.Conf.L2.ProposeInterval,
+		ShufflePoolContent:      true,
+	}
+}
+
+func NewProposer(t *hivesim.T, env *TestEnv, c *proposer.Config) *proposer.Proposer {
+	p := new(proposer.Proposer)
+	proposer.InitFromConfig(env.Context, p, c)
+	return p
+}
+
+func NewProverConfig(env *TestEnv) *prover.Config {
+	return &prover.Config{
+		// TODO
+	}
+}
+
+func NewProver(t *hivesim.T, env *TestEnv, c *prover.Config) *prover.Prover {
+	p := new(prover.Prover)
+	prover.InitFromConfig(env.Context, p, c)
+	return p
 }

@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
+	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
 func main() {
@@ -21,6 +24,11 @@ func main() {
 		Name:        "single node net ops",
 		Description: "test ops on single node net",
 		Run:         singleNodeTest,
+	})
+	suit.Add(&hivesim.TestSpec{
+		Name:        "tooManyPendingBlocks",
+		Description: "Too many pending blocks will block further proposes",
+		Run:         tooManyPendingBlocks,
 	})
 
 	sim := hivesim.New()
@@ -101,6 +109,54 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 	}
 }
 
-func proposeTooManyBlocks(t *hivesim.T) {
-	// TODO
+func tooManyPendingBlocks(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env.StartL1L2ProposerDriver(t)
+
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+
+	var wg sync.WaitGroup
+	genCh := make(chan uint64, 0)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for range genCh {
+			env.L2Vault.CreateAccount(ctx, l2.EthClient(t), big.NewInt(params.GWei))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		taikoL1 := env.Net.GetL1ELNode(0).TaikoL1Client(t)
+		cs, err := rpc.GetProtocolConstants(taikoL1, nil)
+		require.NoError(t, err)
+		ch := make(chan *types.Header)
+		sub, err := l1.EthClient(t).SubscribeNewHead(ctx, ch)
+		require.NoError(t, err)
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case h := <-ch:
+				if h.Number.Uint64() < cs.MaxNumBlocks.Uint64() {
+					t.Logf("current block: %v", h.Number)
+					continue
+				}
+				close(genCh)
+			case err := <-sub.Err():
+				require.NoError(t, err)
+			case <-ctx.Done():
+				t.Fatalf("program close before test finish")
+			}
+		}
+	}()
+	env.L2Vault.CreateAccount(ctx, env.Net.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
+
+	wg.Wait()
+	prop := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	err := prop.ProposeOp(env.Context)
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "L1:tooMany")
 }
