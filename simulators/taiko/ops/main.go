@@ -89,8 +89,15 @@ func genInvalidL2Block(t *hivesim.T, evn *taiko.TestEnv) {
 	// TODO
 }
 
-func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
+func l1Reorg(t *hivesim.T, env *taiko.TestEnv) {
+	l1 := env.Net.GetL1ELNode(0)
+	taikoL1 := l1.TaikoL1Client(t)
+	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+	require.NoError(t, err)
+	l1GethCli := l1.GethClient()
+	require.NoError(t, l1GethCli.SetHead(env.Context, big.NewInt(int64(l1State.GenesisHeight))))
+	l2 := env.Net.GetL2ELNode(0)
+	taiko.WaitLatestBlockEqual(env.Context, t, l2.EthClient(t), common.Big0)
 }
 
 // Start a new driver and taiko-geth, the driver is connected to L1 that already has a propose block,

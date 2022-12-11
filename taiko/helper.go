@@ -39,6 +39,19 @@ func WaitHeight(ctx context.Context, t *hivesim.T, client *ethclient.Client, f f
 	}
 }
 
+func WaitLatestBlockEqual(ctx context.Context, t *hivesim.T, client *ethclient.Client, n *big.Int) error {
+	for {
+		height, err := client.BlockNumber(ctx)
+		require.NoError(t, err)
+		if height == n.Uint64() {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		break
+	}
+	return nil
+}
+
 func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int, needWait bool) common.Hash {
 	if needWait {
 		WaitHeight(ctx, t, cli, Greater(num.Uint64()-1))
