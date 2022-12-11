@@ -95,7 +95,7 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 		}
 		// wait the L1 state change as expected
 		taiko.WaitBlock(ctx, t, d.GetL1ELNode(0).EthClient(t), big.NewInt(int64(l2LatestHeight)+int64(cnt)))
-		l2 := taiko.NewL2ELNode(t, env, d.GetBootNodes(t))
+		l2 := taiko.NewL2ELNode(t, env, d.GetL2ENodes(t))
 		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, true)
 		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big2)
 	}
