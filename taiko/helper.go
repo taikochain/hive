@@ -31,7 +31,7 @@ func WaitBlock(ctx context.Context, t *hivesim.T, client *ethclient.Client, n *b
 		height, err := client.BlockNumber(ctx)
 		require.NoError(t, err)
 		if height < n.Uint64() {
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		break
