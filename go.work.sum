@@ -130,6 +130,10 @@ github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954/go.mod h1:u2MKk
 github.com/taikochain/hive v0.0.0-20220727121216-02ad57aaf9c1/go.mod h1:G8XiiUErpj6++yb93r6y6T1nWBh4Bgoi3QFwUSbzt/U=
 github.com/taikochain/taiko-geth v0.0.0-20221019033350-df3ec74ee5ab h1:FlXVshOHKNE7Otj0FmvJCIcKoeHsFDIFpQ4SgCPtIe0=
 github.com/taikochain/taiko-geth v0.0.0-20221019033350-df3ec74ee5ab/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/taikochain/taiko-geth v0.0.0-20221129083453-a98101c3f5cd h1:Y6VGT7lRNUGCMtdcygQeKqW1f/kMtKcFTO2y2/7B4nI=
+github.com/taikochain/taiko-geth v0.0.0-20221129083453-a98101c3f5cd/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/taikoxyz/taiko-client v0.1.8 h1:/rBRXBxnNaSYTSsxbW0hhzhf1nu4lM//+ZyYqCjuoJY=
+github.com/taikoxyz/taiko-client v0.1.8/go.mod h1:kiLNGbuJ7hZ8f7sGN30S1qbttevLOoTOFmSMzO9L4uE=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
 go.opencensus.io v0.20.1/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=
