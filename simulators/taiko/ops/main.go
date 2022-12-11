@@ -34,7 +34,7 @@ func singleNodeTest(t *hivesim.T) {
 	env.StartSingleNodeNet(t)
 
 	// generate the first L2 transaction
-	env.L2Vault.CreateAccount(ctx, env.DevNet.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
+	env.L2Vault.CreateAccount(ctx, env.Net.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 
 	t.Run(hivesim.TestSpec{
 		Name:        "firstVerifiedL2Block",
@@ -58,7 +58,7 @@ func singleNodeTest(t *hivesim.T) {
 // wait the a L2 transaction be proposed and proved as a L2 block.
 func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.DevNet
+		ctx, d := env.Context, env.Net
 		blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(t), common.Big1, true)
 		taiko.WaitProveEvent(ctx, t, d.GetL1ELNode(0), blockHash)
 	}
@@ -76,7 +76,7 @@ func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
 // and the driver will synchronize and process the propose event on L1 to let taiko-geth generate a new block.
 func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.DevNet
+		ctx, d := env.Context, env.Net
 		l2 := taiko.NewL2ELNode(t, env, "")
 		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, false)
 		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big1)
@@ -85,7 +85,7 @@ func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 
 func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.DevNet
+		ctx, d := env.Context, env.Net
 		l2LatestHeight, err := d.GetL2ELNode(0).EthClient(t).BlockNumber(ctx)
 		require.NoError(t, err)
 		// generate the second L2 transaction

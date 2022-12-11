@@ -63,7 +63,7 @@ type TestEnv struct {
 	Clients *ClientsByRole
 	L1Vault *Vault
 	L2Vault *Vault
-	DevNet  *Devnet
+	Net     *Devnet
 
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
@@ -88,19 +88,28 @@ func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
 	return env
 }
 
-func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) *Devnet {
-	l2 := NewL2ELNode(t, env, "")
-	l1 := NewL1ELNode(t, env, l2)
-	deployL1Contracts(t, env, l1, l2)
+func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
+	env.StartBaseNet(t)
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	opts := []DevOption{
-		WithL2Node(l2),
-		WithL1Node(l1),
 		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
 		WithProverNode(NewProverNode(t, env, l1, l2)),
 		WithProposerNode(NewProposerNode(t, env, l1, l2)),
 	}
-	env.DevNet = NewDevnet(t, env.Conf, opts...)
-	return env.DevNet
+	env.Net.Apply(opts...)
+}
+
+// baseNet contains one L1 engine node, one L2Engine node, and one proposer node.
+func (env *TestEnv) StartBaseNet(t *hivesim.T) {
+	l2 := NewL2ELNode(t, env, "")
+	l1 := NewL1ELNode(t, env)
+	deployL1Contracts(t, env, l1, l2)
+	opts := []DevOption{
+		WithL2Node(l2),
+		WithL1Node(l1),
+		WithProposerNode(NewProposerNode(t, env, l1, l2)),
+	}
+	env.Net = NewDevnet(t, env.Conf, opts...)
 }
 
 // Ctx returns a context with the default timeout.
@@ -134,7 +143,7 @@ func RunTests(ctx context.Context, t *hivesim.T, params *RunTestsParams) {
 			defer s.Release(1)
 			env := &TestEnv{
 				Context: ctx,
-				DevNet:  params.Devnet,
+				Net:     params.Devnet,
 			}
 
 			require.NoError(t, s.Acquire(ctx, 1))
