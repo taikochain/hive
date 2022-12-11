@@ -47,8 +47,6 @@
 
 # Taiko environment variables
 #
-#  - HIVE_TAIKO_NETWORK_ID                           network ID number to use for the taiko protocol
-#  - HIVE_TAIKO_BOOTNODE                             enode URL of the remote bootstrap node for l2 node
 #  - HIVE_TAIKO_L1_RPC_ENDPOINT                      rpc endpoint of the l1 node
 #  - HIVE_TAIKO_L2_RPC_ENDPOINT                      rpc endpoint of the l2 node
 #  - HIVE_TAIKO_L2_ENGINE_ENDPOINT                   engine endpoint of the l2 node
@@ -58,14 +56,12 @@
 #  - HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT              suggested fee recipient
 #  - HIVE_TAIKO_PROPOSE_INTERVAL                     propose interval
 #  - HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY  private key of the throwaway block builder
-#  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
-#  - HIVE_TAIKO_L1_CLIQUE_PERIOD                     l1 clique period
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
 
 set -e
 
 cat /host/genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/$HIVE_TAIKO_L1_CHAIN_ID/g" /host/genesis.json
-cat /host/genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/$HIVE_TAIKO_L1_CLIQUE_PERIOD/g" /host/genesis.json
+cat /host/genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/$HIVE_CLIQUE_PERIOD/g" /host/genesis.json
 
 geth init /host/genesis.json
 
@@ -77,7 +73,8 @@ geth \
 
 geth \
   --nodiscover \
-  --networkid 1336 \
+  --gcmode archive \
+  --networkid "$HIVE_NETWORK_ID" \
   --http \
   --http.addr 0.0.0.0 \
   --http.vhosts l1_geth \

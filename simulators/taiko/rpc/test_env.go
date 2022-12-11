@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -34,11 +36,22 @@ type LegacyTestEnv struct {
 }
 
 // runHTTP runs the given test function using the HTTP RPC client.
-func RunHTTP(t *hivesim.T, n *taiko.Node, vault *taiko.Vault, g *core.Genesis, fn func(*LegacyTestEnv)) {
+func RunHTTP(t *hivesim.T, c *hivesim.Client, vault *taiko.Vault, g *core.Genesis, fn func(*LegacyTestEnv)) {
+	// Set up the debug logger of the requests and responses.
+	client := &http.Client{
+		Transport: &taiko.LoggingRoundTrip{
+			T:     t,
+			Inner: http.DefaultTransport,
+		},
+	}
+
+	rpcClient, _ := rpc.DialHTTPWithClient(fmt.Sprintf("http://%v:8545/", c.IP), client)
+	defer rpcClient.Close()
+	ethClient := ethclient.NewClient(rpcClient)
 	env := &LegacyTestEnv{
 		T:       t,
-		RPC:     n.RPC,
-		Eth:     n.Eth,
+		RPC:     rpcClient,
+		Eth:     ethClient,
 		Vault:   vault,
 		genesis: g,
 	}
@@ -49,11 +62,19 @@ func RunHTTP(t *hivesim.T, n *taiko.Node, vault *taiko.Vault, g *core.Genesis, f
 }
 
 // RunWS runs the given test function using the WebSocket RPC client.
-func RunWS(t *hivesim.T, n *taiko.Node, vault *taiko.Vault, g *core.Genesis, fn func(*LegacyTestEnv)) {
+func RunWS(t *hivesim.T, c *hivesim.Client, vault *taiko.Vault, g *core.Genesis, fn func(*LegacyTestEnv)) {
+	ctx, done := context.WithTimeout(context.Background(), 5*time.Second)
+	rpcClient, err := rpc.DialWebsocket(ctx, fmt.Sprintf("ws://%v:8546/", c.IP), "")
+	done()
+	if err != nil {
+		t.Fatal("WebSocket connection failed:", err)
+	}
+	defer rpcClient.Close()
+	ethClient := ethclient.NewClient(rpcClient)
 	env := &LegacyTestEnv{
 		T:       t,
-		RPC:     n.WsRPC,
-		Eth:     n.WsEth,
+		RPC:     rpcClient,
+		Eth:     ethClient,
 		Vault:   vault,
 		genesis: g,
 	}

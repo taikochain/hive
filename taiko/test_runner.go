@@ -56,15 +56,51 @@ type TestSpec struct {
 	Run         func(t *hivesim.T, env *TestEnv)
 }
 
+// TestEnv is the environment of a single test.
 type TestEnv struct {
 	Context context.Context
-	Devnet  *Devnet
+	Conf    *Config
+	Clients *ClientsByRole
+	L1Vault *Vault
+	L2Vault *Vault
+	DevNet  *Devnet
 
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
 	// timeout and cancels the previous one.
 	lastCtx    context.Context
 	lastCancel context.CancelFunc
+}
+
+func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
+	clientTypes, err := t.Sim.ClientTypes()
+	if err != nil {
+		t.Fatalf("failed to retrieve list of client types: %v", err)
+	}
+	clients := Roles(t, clientTypes)
+	env := &TestEnv{
+		Context: ctx,
+		Conf:    c,
+		Clients: clients,
+	}
+	env.L1Vault = NewVault(t, env.Conf.L1.ChainID)
+	env.L2Vault = NewVault(t, env.Conf.L2.ChainID)
+	return env
+}
+
+func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) *Devnet {
+	l2 := NewL2ELNode(t, env, "")
+	l1 := NewL1ELNode(t, env, l2)
+	deployL1Contracts(t, env, l1, l2)
+	opts := []DevOption{
+		WithL2Node(l2),
+		WithL1Node(l1),
+		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
+		WithProverNode(NewProverNode(t, env, l1, l2)),
+		WithProposerNode(NewProposerNode(t, env, l1, l2)),
+	}
+	env.DevNet = NewDevnet(t, env.Conf, opts...)
+	return env.DevNet
 }
 
 // Ctx returns a context with the default timeout.
@@ -98,7 +134,7 @@ func RunTests(ctx context.Context, t *hivesim.T, params *RunTestsParams) {
 			defer s.Release(1)
 			env := &TestEnv{
 				Context: ctx,
-				Devnet:  params.Devnet,
+				DevNet:  params.Devnet,
 			}
 
 			require.NoError(t, s.Acquire(ctx, 1))

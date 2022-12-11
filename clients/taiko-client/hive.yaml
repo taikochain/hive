@@ -1,0 +1,4 @@
+roles:
+  - taiko-driver
+  - taiko-prover
+  - taiko-proposer
