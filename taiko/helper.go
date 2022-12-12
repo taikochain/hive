@@ -39,22 +39,9 @@ func WaitHeight(ctx context.Context, t *hivesim.T, client *ethclient.Client, f f
 	}
 }
 
-func WaitLatestBlockEqual(ctx context.Context, t *hivesim.T, client *ethclient.Client, n *big.Int) error {
-	for {
-		height, err := client.BlockNumber(ctx)
-		require.NoError(t, err)
-		if height == n.Uint64() {
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-		break
-	}
-	return nil
-}
-
 func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int, needWait bool) common.Hash {
 	if needWait {
-		WaitHeight(ctx, t, cli, Greater(num.Uint64()-1))
+		WaitHeight(ctx, t, cli, Greater(int64(num.Uint64()-1)))
 	}
 	block, err := cli.BlockByNumber(ctx, num)
 	require.NoError(t, err)
@@ -156,13 +143,13 @@ func GenCommitDelayBlocks(t *hivesim.T, env *TestEnv) {
 	cnt := int(env.L1Constants.CommitDelayConfirmations.Uint64())
 	for i := 0; i < cnt; i++ {
 		env.L1Vault.CreateAccount(env.Context, l1.EthClient(t), big.NewInt(params.GWei))
-		WaitHeight(env.Context, t, l1.EthClient(t), Greater(curr+uint64(i)))
+		WaitHeight(env.Context, t, l1.EthClient(t), Greater(int64(curr)+int64(i)))
 	}
 }
 
-func Greater(want uint64) func(uint64) bool {
+func Greater(want int64) func(uint64) bool {
 	return func(get uint64) bool {
-		if get > want {
+		if int64(get) > want {
 			return true
 		}
 		return false
