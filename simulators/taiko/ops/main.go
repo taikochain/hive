@@ -72,7 +72,7 @@ func singleNodeTest(t *hivesim.T) {
 func firstL1Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		taiko.GenCommitDelayBlocks(t, env)
-		taiko.WaitHeight(env.Context, t, env.Net.GetL1ELNode(0).EthClient(t), taiko.Greater(common.Big0.Uint64()))
+		taiko.WaitHeight(env.Context, t, env.Net.GetL1ELNode(0).EthClient(t), taiko.Greater(common.Big0.Int64()))
 	}
 }
 
@@ -89,8 +89,15 @@ func genInvalidL2Block(t *hivesim.T, evn *taiko.TestEnv) {
 	// TODO
 }
 
-func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
-	// TODO
+func l1Reorg(t *hivesim.T, env *taiko.TestEnv) {
+	l1 := env.Net.GetL1ELNode(0)
+	taikoL1 := l1.TaikoL1Client(t)
+	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+	require.NoError(t, err)
+	l1GethCli := l1.GethClient()
+	require.NoError(t, l1GethCli.SetHead(env.Context, big.NewInt(int64(l1State.GenesisHeight))))
+	l2 := env.Net.GetL2ELNode(0)
+	taiko.WaitHeight(env.Context, t, l2.EthClient(t), taiko.Greater(-1))
 }
 
 // Start a new driver and taiko-geth, the driver is connected to L1 that already has a propose block,
@@ -100,7 +107,7 @@ func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 		ctx, d := env.Context, env.Net
 		l2 := taiko.NewL2ELNode(t, env, "")
 		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, false)
-		taiko.WaitHeight(ctx, t, l2.EthClient(t), taiko.Greater(common.Big0.Uint64()))
+		taiko.WaitHeight(ctx, t, l2.EthClient(t), taiko.Greater(common.Big0.Int64()))
 	}
 }
 
@@ -114,7 +121,7 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 		cnt := 2
 		for i := 0; i < cnt; i++ {
 			env.L2Vault.CreateAccount(ctx, l2, big.NewInt(params.Ether))
-			taiko.WaitHeight(ctx, t, l2, taiko.Greater(l2LatestHeight+uint64(i)))
+			taiko.WaitHeight(ctx, t, l2, taiko.Greater(int64(l2LatestHeight)+int64(i)))
 		}
 		// start new L2 engine and driver to sync by p2p
 		newL2 := taiko.NewL2ELNode(t, env, d.GetL2ENodes(t))
@@ -124,7 +131,7 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
 		if l1State.LatestVerifiedHeight > 0 {
-			taiko.WaitHeight(ctx, t, newL2.EthClient(t), taiko.Greater(l1State.LatestVerifiedHeight))
+			taiko.WaitHeight(ctx, t, newL2.EthClient(t), taiko.Greater(int64(l1State.LatestVerifiedHeight)))
 		} else {
 			t.Logf("sync by p2p, but LatestVerifiedHeight==0")
 		}
