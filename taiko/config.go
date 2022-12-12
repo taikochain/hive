@@ -26,7 +26,7 @@ var DefaultConfig = &Config{
 		VaultAddress:     common.HexToAddress("0x5E506e2E0EaD3Ff9d93859A5879cAA02582f77c3"),
 		TestERC20Address: common.HexToAddress("0x0000000000000000000000000000000000000000"),
 
-		MineInterval: 1,
+		MineInterval: 0,
 	},
 	L2: &L2Config{
 		ChainID:   params.TaikoAlpha1NetworkID,

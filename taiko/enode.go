@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/ethclient/gethclient"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
@@ -48,16 +49,20 @@ func (e *ELNode) EthClient(t *hivesim.T) *ethclient.Client {
 	return cli
 }
 
-func (e *ELNode) L1TaikoClient(t *hivesim.T) *bindings.TaikoL1Client {
+func (e *ELNode) TaikoL1Client(t *hivesim.T) *bindings.TaikoL1Client {
 	c := e.EthClient(t)
 	cli, err := bindings.NewTaikoL1Client(e.TaikoAddr, c)
 	require.NoError(t, err)
 	return cli
 }
 
-func (e *ELNode) L2TaikoClient(t *hivesim.T) *bindings.V1TaikoL2Client {
+func (e *ELNode) TaikoL2Client(t *hivesim.T) *bindings.TaikoL2Client {
 	c := e.EthClient(t)
-	cli, err := bindings.NewV1TaikoL2Client(e.TaikoAddr, c)
+	cli, err := bindings.NewTaikoL2Client(e.TaikoAddr, c)
 	require.NoError(t, err)
 	return cli
+}
+
+func (e *ELNode) GethClient() *gethclient.Client {
+	return gethclient.New(e.RPC())
 }
