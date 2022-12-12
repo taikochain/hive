@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 	"math/rand"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -164,44 +164,17 @@ func tooManyPendingBlocks(t *hivesim.T) {
 
 	prop := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ch := make(chan *types.Header)
-		sub, err := l2.EthClient(t).SubscribeNewHead(ctx, ch)
-		require.NoError(t, err)
-		defer sub.Unsubscribe()
-		taikoL1 := env.Net.GetL1ELNode(0).TaikoL1Client(t)
-		for {
-			select {
-			case h := <-ch:
-				if canPropose(t, env, taikoL1) {
-					t.Logf("current block: %v", h.Number)
-					require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
-					require.NoError(t, prop.ProposeOp(env.Context))
-					continue
-				}
-				return
-			case err := <-sub.Err():
-				require.NoError(t, err)
-			case <-ctx.Done():
-				t.Fatalf("program close before test finish")
-			}
-		}
-	}()
-
-	// gen the first l2 block
-	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
-	require.NoError(t, prop.ProposeOp(env.Context))
-
-	// wait the pending block up to LibConstants.K_MAX_NUM_BLOCKS
-	wg.Wait()
-
+	taikoL1 := l1.TaikoL1Client(t)
+	for canPropose(t, env, taikoL1) {
+		require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
+		require.NoError(t, prop.ProposeOp(env.Context))
+		time.Sleep(10 * time.Millisecond)
+	}
 	// wait error
+	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
 	err := prop.ProposeOp(env.Context)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "L1:tooMany")
+	require.True(t, strings.Contains(err.Error(), "L1:tooMany"))
 }
 
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
