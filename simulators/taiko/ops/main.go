@@ -8,10 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
+	"github.com/taikoxyz/taiko-client/bindings"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
@@ -180,4 +182,13 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	err := prop.ProposeOp(env.Context)
 	require.Error(t, err)
 	require.Equal(t, err.Error(), "L1:tooMany")
+}
+
+
+func sendL2Tx(t *hivesim.T, ctx context.Context, v *taiko.Vault, client *ethclient.Client, amount *big.Int) {
+	address := v.GenerateKey()
+	tx := v.MakeFundingTx(address, amount)
+	if err := client.SendTransaction(ctx, tx); err != nil {
+		t.Fatalf("unable to send funding transaction: %v", err)
+	}
 }

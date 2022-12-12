@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 
 	"github.com/ethereum/go-ethereum"
@@ -158,4 +159,13 @@ func (v *Vault) nextNonce() uint64 {
 	nonce := v.nonce
 	v.nonce++
 	return nonce
+}
+
+func (v *Vault) SendTestTx(ctx context.Context, client *ethclient.Client) error {
+	address := v.GenerateKey()
+	tx := v.makeFundingTx(address, big.NewInt(params.GWei))
+	if err := client.SendTransaction(ctx, tx); err != nil {
+		return fmt.Errorf("unable to send funding transaction: %v", err)
+	}
+	return nil
 }

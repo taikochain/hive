@@ -77,7 +77,7 @@ func NewL2ELNode(t *hivesim.T, env *TestEnv, bootNodes string) *ELNode {
 		WithJWTSecret(env.Conf.L2.JWTSecret),
 		WithELNodeType("full"),
 		WithNetworkID(env.Conf.L2.NetworkID),
-		WithLogLevel("4"),
+		WithLogLevel("3"),
 	}
 	if len(bootNodes) > 0 {
 		opts = append(opts, WithBootNode(bootNodes))
