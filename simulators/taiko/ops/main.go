@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
@@ -132,42 +131,38 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	}
 }
 
+// Since there is no prover, state.LatestVerifiedId is always 0,
+// so you will get an error when you propose the LibConstants.K_MAX_NUM_BLOCKS block
 func tooManyPendingBlocks(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
+
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2ProposerDriver(t)
+	env.StartL1L2Driver(t)
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 
-	var wg sync.WaitGroup
-	genCh := make(chan uint64, 0)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for range genCh {
-			env.L2Vault.CreateAccount(ctx, l2.EthClient(t), big.NewInt(params.GWei))
-		}
-	}()
+	prop := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 
+	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		taikoL1 := env.Net.GetL1ELNode(0).TaikoL1Client(t)
-		cs, err := rpc.GetProtocolConstants(taikoL1, nil)
-		require.NoError(t, err)
 		ch := make(chan *types.Header)
-		sub, err := l1.EthClient(t).SubscribeNewHead(ctx, ch)
+		sub, err := l2.EthClient(t).SubscribeNewHead(ctx, ch)
 		require.NoError(t, err)
 		defer sub.Unsubscribe()
+		taikoL1 := env.Net.GetL1ELNode(0).TaikoL1Client(t)
 		for {
 			select {
 			case h := <-ch:
-				if h.Number.Uint64() < cs.MaxNumBlocks.Uint64() {
+				if canPropose(t, env, taikoL1) {
 					t.Logf("current block: %v", h.Number)
+					require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
+					require.NoError(t, prop.ProposeOp(env.Context))
 					continue
 				}
-				close(genCh)
+				return
 			case err := <-sub.Err():
 				require.NoError(t, err)
 			case <-ctx.Done():
@@ -175,20 +170,22 @@ func tooManyPendingBlocks(t *hivesim.T) {
 			}
 		}
 	}()
-	env.L2Vault.CreateAccount(ctx, env.Net.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 
+	// gen the first l2 block
+	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2.EthClient(t)))
+	require.NoError(t, prop.ProposeOp(env.Context))
+
+	// wait the pending block up to LibConstants.K_MAX_NUM_BLOCKS
 	wg.Wait()
-	prop := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+
+	// wait error
 	err := prop.ProposeOp(env.Context)
 	require.Error(t, err)
 	require.Equal(t, err.Error(), "L1:tooMany")
 }
 
-
-func sendL2Tx(t *hivesim.T, ctx context.Context, v *taiko.Vault, client *ethclient.Client, amount *big.Int) {
-	address := v.GenerateKey()
-	tx := v.MakeFundingTx(address, amount)
-	if err := client.SendTransaction(ctx, tx); err != nil {
-		t.Fatalf("unable to send funding transaction: %v", err)
-	}
+func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
+	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+	require.NoError(t, err)
+	return l1State.NextBlockID < l1State.LatestVerifiedID+env.L1Constants.MaxNumBlocks.Uint64()
 }
