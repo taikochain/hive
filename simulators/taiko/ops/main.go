@@ -3,17 +3,21 @@ package main
 import (
 	"context"
 	"math/big"
+	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
+	"github.com/taikoxyz/taiko-client/testutils"
 )
 
 func main() {
@@ -31,7 +35,16 @@ func main() {
 		Description: "Too many pending blocks will block further proposes",
 		Run:         tooManyPendingBlocks,
 	})
-
+	suit.Add(&hivesim.TestSpec{
+		Name:        "proposeInvalidTxListBytes",
+		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
+		Run:         proposeInvalidTxListBytes,
+	})
+	suit.Add(&hivesim.TestSpec{
+		Name:        "proposeTxListIncludingInvalidTx",
+		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
+		Run:         proposeTxListIncludingInvalidTx,
+	})
 	sim := hivesim.New()
 	hivesim.MustRun(sim, suit)
 }
@@ -195,4 +208,90 @@ func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Clien
 	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 	require.NoError(t, err)
 	return l1State.NextBlockID < l1State.LatestVerifiedID+env.L1Constants.MaxNumBlocks.Uint64()
+}
+
+// proposeInvalidTxListBytes commits and proposes an invalid transaction list
+// bytes to TaikoL1 contract.
+func proposeInvalidTxListBytes(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	defer cancel()
+
+	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env.StartL1L2(t)
+
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+
+	invalidTxListBytes := testutils.RandomBytes(256)
+	meta, commitTx, err := p.CommitTxList(
+		env.Context,
+		invalidTxListBytes,
+		uint64(rand.Int63n(env.L1Constants.BlockMaxGasLimit.Int64())),
+		0,
+	)
+	require.NoError(t, err)
+	taiko.GenCommitDelayBlocks(t, env)
+	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
+	taiko.WaitHeight(ctx, t, l1.EthClient(t), taiko.Greater(0))
+	taiko.WaitStateChange(t, l1.TaikoL1Client(t), func(psv *bindings.ProtocolStateVariables) bool {
+		if psv.NextBlockID == 2 {
+			return true
+		}
+		return false
+	})
+}
+
+// proposeTxListIncludingInvalidTx commits and proposes a validly encoded
+// transaction list which including an invalid transaction.
+func proposeTxListIncludingInvalidTx(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	defer cancel()
+
+	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env.StartL1L2Driver(t)
+
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+
+	invalidTx := generateInvalidTransaction(t, env)
+
+	txListBytes, err := rlp.EncodeToBytes(types.Transactions{invalidTx})
+	require.NoError(t, err)
+
+	meta, commitTx, err := p.CommitTxList(env.Context, txListBytes, invalidTx.Gas(), 0)
+	require.NoError(t, err)
+
+	taiko.GenCommitDelayBlocks(t, env)
+
+	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
+
+	taiko.WaitHeight(ctx, t, l1.EthClient(t), taiko.Greater(0))
+	taiko.WaitStateChange(t, l1.TaikoL1Client(t), func(psv *bindings.ProtocolStateVariables) bool {
+		if psv.NextBlockID == 2 {
+			return true
+		}
+		return false
+	})
+	pendingNonce, err := l2.EthClient(t).PendingNonceAt(context.Background(), env.Conf.L2.Proposer.Address)
+	require.Nil(t, err)
+	require.NotEqual(t, invalidTx.Nonce(), pendingNonce)
+}
+
+// generateInvalidTransaction creates a transaction with an invalid nonce to
+// current L2 world state.
+func generateInvalidTransaction(t *hivesim.T, env *taiko.TestEnv) *types.Transaction {
+	opts, err := bind.NewKeyedTransactorWithChainID(env.Conf.L2.Proposer.PrivateKey, env.Conf.L2.ChainID)
+	require.NoError(t, err)
+	l2 := env.Net.GetL2ELNode(0)
+	nonce, err := l2.EthClient(t).PendingNonceAt(env.Context, env.Conf.L2.Proposer.Address)
+	require.NoError(t, err)
+
+	opts.GasLimit = 300000
+	opts.NoSend = true
+	opts.Nonce = new(big.Int).SetUint64(nonce + 1024)
+
+	taikoL2 := l2.TaikoL2Client(t)
+	tx, err := taikoL2.Anchor(opts, common.Big0, common.BytesToHash(testutils.RandomBytes(32)))
+	require.NoError(t, err)
+	return tx
 }

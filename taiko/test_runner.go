@@ -103,6 +103,12 @@ func (env *TestEnv) StartL1L2ProposerDriver(t *hivesim.T) {
 }
 
 func (env *TestEnv) StartL1L2Driver(t *hivesim.T) {
+	env.StartL1L2(t)
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2, false)))
+}
+
+func (env *TestEnv) StartL1L2(t *hivesim.T) {
 	l2 := NewL2ELNode(t, env, "")
 	l1 := NewL1ELNode(t, env)
 	deployL1Contracts(t, env, l1, l2)
@@ -113,7 +119,6 @@ func (env *TestEnv) StartL1L2Driver(t *hivesim.T) {
 	opts := []DevOption{
 		WithL2Node(l2),
 		WithL1Node(l1),
-		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
 	}
 	env.Net = NewDevnet(t, env.Conf, opts...)
 }
