@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
+	"github.com/taikoxyz/taiko-client/bindings"
+	"github.com/taikoxyz/taiko-client/pkg/rpc"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -58,13 +60,13 @@ type TestSpec struct {
 
 // TestEnv is the environment of a single test.
 type TestEnv struct {
-	Context context.Context
-	Conf    *Config
-	Clients *ClientsByRole
-	L1Vault *Vault
-	L2Vault *Vault
-	Net     *Devnet
-
+	Context     context.Context
+	Conf        *Config
+	Clients     *ClientsByRole
+	L1Vault     *Vault
+	L2Vault     *Vault
+	Net         *Devnet
+	L1Constants *bindings.ProtocolConstants
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
 	// timeout and cancels the previous one.
@@ -95,24 +97,23 @@ func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
 }
 
 func (env *TestEnv) StartL1L2ProposerDriver(t *hivesim.T) {
-	env.StartL1L2Proposer(t)
-	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2, false)))
-}
-
-func (env *TestEnv) StartL1L2Proposer(t *hivesim.T) {
-	env.StartL1L2(t)
+	env.StartL1L2Driver(t)
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	env.Net.Apply(WithProposerNode(NewProposerNode(t, env, l1, l2)))
 }
 
-func (env *TestEnv) StartL1L2(t *hivesim.T) {
+func (env *TestEnv) StartL1L2Driver(t *hivesim.T) {
 	l2 := NewL2ELNode(t, env, "")
 	l1 := NewL1ELNode(t, env)
 	deployL1Contracts(t, env, l1, l2)
+	taikoL1 := l1.TaikoL1Client(t)
+	var err error
+	env.L1Constants, err = rpc.GetProtocolConstants(taikoL1, nil)
+	require.NoError(t, err)
 	opts := []DevOption{
 		WithL2Node(l2),
 		WithL1Node(l1),
+		WithDriverNode(NewDriverNode(t, env, l1, l2, false)),
 	}
 	env.Net = NewDevnet(t, env.Conf, opts...)
 }

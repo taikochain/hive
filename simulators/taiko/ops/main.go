@@ -45,6 +45,11 @@ func singleNodeTest(t *hivesim.T) {
 	env.L2Vault.CreateAccount(ctx, env.Net.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 
 	t.Run(hivesim.TestSpec{
+		Name:        "first L1 block",
+		Description: "",
+		Run:         firstL1Block(t, env),
+	})
+	t.Run(hivesim.TestSpec{
 		Name:        "firstVerifiedL2Block",
 		Description: "watch prove event of the first L2 block on L1",
 		Run:         firstVerifiedL2Block(t, env),
@@ -63,8 +68,15 @@ func singleNodeTest(t *hivesim.T) {
 	})
 }
 
+func firstL1Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+	return func(t *hivesim.T) {
+		taiko.GenCommitDelayBlocks(t, env)
+		taiko.WaitHeight(env.Context, t, env.Net.GetL1ELNode(0).EthClient(t), taiko.Greater(common.Big0.Uint64()))
+	}
+}
+
 // wait the a L2 transaction be proposed and proved as a L2 block.
-func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
+func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
 		blockHash := taiko.GetBlockHashByNumber(ctx, t, d.GetL2ELNode(0).EthClient(t), common.Big1, true)
@@ -82,30 +94,39 @@ func driverHandleL1Reorg(t *hivesim.T, env *taiko.TestEnv) {
 
 // Start a new driver and taiko-geth, the driver is connected to L1 that already has a propose block,
 // and the driver will synchronize and process the propose event on L1 to let taiko-geth generate a new block.
-func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
+func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
 		l2 := taiko.NewL2ELNode(t, env, "")
 		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, false)
-		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big1)
+		taiko.WaitHeight(ctx, t, l2.EthClient(t), taiko.Greater(common.Big0.Uint64()))
 	}
 }
 
-func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
+func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
-		l2LatestHeight, err := d.GetL2ELNode(0).EthClient(t).BlockNumber(ctx)
+		l2 := d.GetL2ELNode(0).EthClient(t)
+		l2LatestHeight, err := l2.BlockNumber(ctx)
 		require.NoError(t, err)
-		// generate the second L2 transaction
+		// generate more L2 transactions for test
 		cnt := 2
 		for i := 0; i < cnt; i++ {
-			env.L2Vault.CreateAccount(ctx, d.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
+			env.L2Vault.CreateAccount(ctx, l2, big.NewInt(params.Ether))
+			taiko.WaitHeight(ctx, t, l2, taiko.Greater(l2LatestHeight+uint64(i)))
 		}
-		// wait the L1 state change as expected
-		taiko.WaitBlock(ctx, t, d.GetL1ELNode(0).EthClient(t), big.NewInt(int64(l2LatestHeight)+int64(cnt)))
-		l2 := taiko.NewL2ELNode(t, env, d.GetL2ENodes(t))
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, true)
-		taiko.WaitBlock(ctx, t, l2.EthClient(t), common.Big2)
+		// start new L2 engine and driver to sync by p2p
+		newL2 := taiko.NewL2ELNode(t, env, d.GetL2ENodes(t))
+		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, true)
+
+		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
+		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+		require.NoError(t, err)
+		if l1State.LatestVerifiedHeight > 0 {
+			taiko.WaitHeight(ctx, t, newL2.EthClient(t), taiko.Greater(l1State.LatestVerifiedHeight))
+		} else {
+			t.Logf("sync by p2p, but LatestVerifiedHeight==0")
+		}
 	}
 }
 
