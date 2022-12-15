@@ -19,4 +19,4 @@ FLAGS="$FLAGS --confirmations 1"
 
 echo "Deploy L1 rollup contacts with flags $FLAGS"
 
-npx hardhat deploy_L1 $FLAGS
+K_MAX_NUM_BLOCKS=100 K_INITIAL_UNCLE_DELAY=1 npx hardhat preprocess && npx hardhat compile && npx hardhat deploy_L1 $FLAGS
