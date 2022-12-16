@@ -123,6 +123,26 @@ func (env *TestEnv) StartL1L2(t *hivesim.T) {
 	env.Net = NewDevnet(t, env.Conf, opts...)
 }
 
+func (env *TestEnv) GenSomeL1Blocks(t *hivesim.T, cnt uint64) {
+	GenSomeBlocks(t, env.Context, env.Net.GetL1ELNode(0), env.L1Vault, cnt)
+}
+
+func (env *TestEnv) GenCommitDelayBlocks(t *hivesim.T) {
+	cnt := env.L1Constants.CommitDelayConfirmations.Uint64()
+	if cnt == 0 {
+		return
+	}
+	n := env.Net.GetL1ELNode(0)
+	require.NotNil(t, n)
+	GenSomeBlocks(t, env.Context, n, env.L1Vault, cnt)
+}
+
+func (env *TestEnv) GenSomeL2Blocks(t *hivesim.T, cnt uint64) {
+	n := env.Net.GetL2ELNode(0)
+	require.NotNil(t, n)
+	GenSomeBlocks(t, env.Context, n, env.L2Vault, cnt)
+}
+
 // Ctx returns a context with the default timeout.
 // For subsequent calls to Ctx, it also cancels the previous context.
 func (t *TestEnv) Ctx() context.Context {

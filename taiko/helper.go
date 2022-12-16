@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
@@ -19,15 +18,16 @@ import (
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
-func WaitELNodesUp(ctx context.Context, t *hivesim.T, node *ELNode, timeout time.Duration) {
+func WaitELNodesUp(ctx context.Context, t *hivesim.T, n *ELNode, timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	if _, err := node.EthClient(t).ChainID(ctx); err != nil {
-		t.Fatalf("%s should be up within %v,err=%v", node.Type, timeout, err)
+	if _, err := n.EthClient(t).ChainID(ctx); err != nil {
+		t.Fatalf("%s should be up within %v,err=%v", n.Type, timeout, err)
 	}
 }
 
-func WaitHeight(ctx context.Context, t *hivesim.T, client *ethclient.Client, f func(uint64) bool) {
+func WaitHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(uint64) bool) {
+	client := n.EthClient(t)
 	for {
 		height, err := client.BlockNumber(ctx)
 		require.NoError(t, err)
@@ -39,24 +39,26 @@ func WaitHeight(ctx context.Context, t *hivesim.T, client *ethclient.Client, f f
 	}
 }
 
-func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, cli *ethclient.Client, num *big.Int, needWait bool) common.Hash {
+func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, n *ELNode, num *big.Int, needWait bool) common.Hash {
 	if needWait {
-		WaitHeight(ctx, t, cli, Greater(int64(num.Uint64()-1)))
+		WaitHeight(ctx, t, n, GreaterEqual(num.Uint64()))
 	}
+	cli := n.EthClient(t)
 	block, err := cli.BlockByNumber(ctx, num)
 	require.NoError(t, err)
 	return block.Hash()
 }
 
-func WaitReceiptOK(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, client, hash, types.ReceiptStatusSuccessful)
+func WaitReceiptOK(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, t, n, hash, types.ReceiptStatusSuccessful)
 }
 
-func WaitReceiptFailed(ctx context.Context, client *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, client, hash, types.ReceiptStatusFailed)
+func WaitReceiptFailed(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, t, n, hash, types.ReceiptStatusFailed)
 }
 
-func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash, status uint64) (*types.Receipt, error) {
+func WaitReceipt(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash, status uint64) (*types.Receipt, error) {
+	client := n.EthClient(t)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -79,8 +81,9 @@ func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash
 	}
 }
 
-func SubscribeHeight(ctx context.Context, t *hivesim.T, cli *ethclient.Client, f func(*big.Int) bool) {
+func SubscribeHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(*big.Int) bool) {
 	ch := make(chan *types.Header)
+	cli := n.EthClient(t)
 	sub, err := cli.SubscribeNewHead(ctx, ch)
 	require.NoError(t, err)
 	defer sub.Unsubscribe()
@@ -99,11 +102,11 @@ func SubscribeHeight(ctx context.Context, t *hivesim.T, cli *ethclient.Client, f
 	}
 }
 
-func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, hash common.Hash) {
-	taikoL1 := l1.TaikoL1Client(t)
+func WaitProveEvent(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) {
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: ctx}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
+	taikoL1 := n.TaikoL1Client(t)
 	sub, err := taikoL1.WatchBlockProven(opt, eventCh, nil)
 	defer sub.Unsubscribe()
 	if err != nil {
@@ -124,7 +127,8 @@ func WaitProveEvent(ctx context.Context, t *hivesim.T, l1 *ELNode, hash common.H
 	}
 }
 
-func WaitStateChange(t *hivesim.T, taikoL1 *bindings.TaikoL1Client, f func(*bindings.ProtocolStateVariables) bool) {
+func WaitStateChange(t *hivesim.T, n *ELNode, f func(*bindings.ProtocolStateVariables) bool) {
+	taikoL1 := n.TaikoL1Client(t)
 	for i := 0; i < 60; i++ {
 		s, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
@@ -136,20 +140,23 @@ func WaitStateChange(t *hivesim.T, taikoL1 *bindings.TaikoL1Client, f func(*bind
 	}
 }
 
-func GenCommitDelayBlocks(t *hivesim.T, env *TestEnv) {
-	l1 := env.Net.GetL1ELNode(0)
-	curr, err := l1.EthClient(t).BlockNumber(env.Context)
+func GenSomeBlocks(t *hivesim.T, ctx context.Context, n *ELNode, v *Vault, cnt uint64) {
+	cli := n.EthClient(t)
+	curr, err := cli.BlockNumber(ctx)
 	require.NoError(t, err)
-	cnt := int(env.L1Constants.CommitDelayConfirmations.Uint64())
-	for i := 0; i < cnt; i++ {
-		env.L1Vault.CreateAccount(env.Context, l1.EthClient(t), big.NewInt(params.GWei))
-		WaitHeight(env.Context, t, l1.EthClient(t), Greater(int64(curr)+int64(i)))
+	end := curr + cnt
+	for curr < end {
+		v.CreateAccount(ctx, cli, big.NewInt(params.GWei))
+		curr, err = cli.BlockNumber(ctx)
+		require.NoError(t, err)
+		time.Sleep(10 * time.Millisecond)
 	}
+	t.Logf("generate %d L2 blocks", cnt)
 }
 
-func Greater(want int64) func(uint64) bool {
+func GreaterEqual(want uint64) func(uint64) bool {
 	return func(get uint64) bool {
-		if int64(get) > want {
+		if get >= want {
 			return true
 		}
 		return false
