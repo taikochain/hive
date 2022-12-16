@@ -161,11 +161,39 @@ func (v *Vault) nextNonce() uint64 {
 	return nonce
 }
 
-func (v *Vault) SendTestTx(ctx context.Context, client *ethclient.Client) error {
+func (v *Vault) SendL2TestTx(ctx context.Context, client *ethclient.Client) error {
 	address := v.GenerateKey()
 	tx := v.makeFundingTx(address, big.NewInt(params.GWei))
 	if err := client.SendTransaction(ctx, tx); err != nil {
 		return fmt.Errorf("unable to send funding transaction: %v", err)
 	}
 	return nil
+}
+
+func (v *Vault) SendL1TestTx(ctx context.Context, client *ethclient.Client, nonce uint64) error {
+	address := v.GenerateKey()
+	tx := v.makeL1FundingTx(client, address, big.NewInt(params.GWei), nonce)
+	if err := client.SendTransaction(ctx, tx); err != nil {
+		return fmt.Errorf("unable to send funding transaction: %v", err)
+	}
+	return nil
+}
+
+func (v *Vault) makeL1FundingTx(cli *ethclient.Client, recipient common.Address, amount *big.Int, nonce uint64) *types.Transaction {
+	var (
+		gasLimit = uint64(75000)
+	)
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    nonce,
+		Gas:      gasLimit,
+		GasPrice: big.NewInt(1),
+		To:       &recipient,
+		Value:    amount,
+	})
+	signer := types.LatestSignerForChainID(v.chainID)
+	signedTx, err := types.SignTx(tx, signer, vaultKey)
+	if err != nil {
+		v.t.Fatal("can'T sign vault funding tx:", err)
+	}
+	return signedTx
 }

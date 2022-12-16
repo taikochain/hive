@@ -90,7 +90,7 @@ case $HIVE_TAIKO_ROLE in
   if [ "$HIVE_TAIKO_ENABLE_L2_P2P" != "" ]; then
     FLAGS="$FLAGS --p2p.syncVerifiedBlocks "
   fi
-  FLAGS="$FLAGS --verbosity 3"
+  FLAGS="$FLAGS --verbosity 4"
   ;;
 "prover")
   FLAGS="$FLAGS --zkevmRpcdEndpoint=ws://127.0.0.1:18545"
