@@ -51,7 +51,7 @@ func NewL1ELNode(t *hivesim.T, env *TestEnv) *ELNode {
 // deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
 func deployL1Contracts(t *hivesim.T, env *TestEnv, l1Node, l2 *ELNode) {
 	require.NotNil(t, env.Clients.Contract)
-	l2GenesisHash := GetBlockHashByNumber(env.Context, t, l2.EthClient(t), common.Big0, false)
+	l2GenesisHash := GetBlockHashByNumber(env.Context, t, l2, common.Big0, false)
 	opts := []NodeOption{
 		WithNoCheck(),
 		WithPrivateKey(env.Conf.L1.Deployer.PrivateKeyHex),
