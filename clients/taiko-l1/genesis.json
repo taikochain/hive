@@ -1,0 +1,68 @@
+{
+  "config": {
+    "chainId": CHAIN_ID_PLACE_HOLDER,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
+    "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "eip155Block": 0,
+    "eip158Block": 0,
+    "byzantiumBlock": 0,
+    "constantinopleBlock": 0,
+    "petersburgBlock": 0,
+    "istanbulBlock": 0,
+    "muirGlacierBlock": 0,
+    "berlinBlock": 0,
+    "londonBlock": 0,
+    "arrowGlacierBlock": 0,
+    "grayGlacierBlock": 0,
+    "mergeNetsplitBlock": 0,
+    "clique": {
+      "period": PERIOD_PLACE_HOLDER,
+      "epoch": 30000
+    }
+  },
+  "gasLimit": "10000000",
+  "difficulty": "0",
+  "extraData": "0x0000000000000000000000000000000000000000000000000000000000000000df08f82de32b8d460adbe8d72043e3a7e25a3b390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  "alloc": {
+    "0xDf08F82De32B8d460adbE8D72043E3a7e25A3B39": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x4Ec242468812B6fFC8Be8FF423Af7bd23108d991": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x513b9b8bffd6b79056f5250b04b0e863814d6dd6": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x79b9f64744c98cd8cc20adb79b6a297e964254cc": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0xdD2FD4581271e230360230F9337D5c0430Bf44C0": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x2546BcD3c84621e976D8185a91A922aE77ECEc30": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0xcd3B766CCDd6AE721141F452C550Ca635964ce71": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0x71bE63f3384f5fb98995898A86B02Fb2426c5788": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "0xBcd4042DE499D14e55001CcbB24a551F3b954096": {
+      "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+  }
+}

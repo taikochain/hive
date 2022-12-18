@@ -3,33 +3,45 @@ module github.com/ethereum/hive/simulators/ethereum/sync
 go 1.17
 
 require (
-	github.com/ethereum/go-ethereum v1.10.17
+	github.com/ethereum/go-ethereum v1.10.25
 	github.com/ethereum/hive v0.0.0-20220520142542-870157aa5005
 )
 
 require (
-	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
-	github.com/btcsuite/btcd v0.22.0-beta // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.1.2 // indirect
+	github.com/VictoriaMetrics/fastcache v1.10.0 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.2.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
+	github.com/edsrzf/mmap-go v1.1.0 // indirect
+	github.com/fjl/memsize v0.0.1 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
-	github.com/go-ole/go-ole v1.2.5 // indirect
-	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-stack/stack v1.8.1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/onsi/ginkgo v1.16.4 // indirect
-	github.com/onsi/gomega v1.15.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/hashicorp/go-bexpr v0.1.11 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/rivo/uniseg v0.3.4 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
-	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
-	github.com/status-im/keycard-go v0.0.0-20190424133014-d95853db0f48 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
-	github.com/tklauser/go-sysconf v0.3.5 // indirect
-	github.com/tklauser/numcpus v0.2.2 // indirect
-	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
-	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
+	github.com/rs/cors v1.8.2 // indirect
+	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
+	github.com/status-im/keycard-go v0.0.0-20211109104530-b0e0482ba91d // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a // indirect
+	github.com/tklauser/go-sysconf v0.3.10 // indirect
+	github.com/tklauser/numcpus v0.5.0 // indirect
+	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
+	github.com/urfave/cli/v2 v2.14.1 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b // indirect
+	golang.org/x/net v0.0.0-20220907135653-1e95f45603a7 // indirect
+	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )

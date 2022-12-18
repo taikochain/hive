@@ -41,12 +41,15 @@ func NewRunner(inv Inventory, b Builder, cb ContainerBackend) *Runner {
 
 // Build builds client and simulator images.
 func (r *Runner) Build(ctx context.Context, clientList, simList []string) error {
+	// 1. build hiveproxy frontend image
 	if err := r.container.Build(ctx, r.builder); err != nil {
 		return err
 	}
+	// 2. build ethereum client images
 	if err := r.buildClients(ctx, clientList); err != nil {
 		return err
 	}
+	// 3. build simulator images
 	return r.buildSimulators(ctx, simList)
 }
 
@@ -64,6 +67,7 @@ func (r *Runner) buildClients(ctx context.Context, clientList []string) error {
 		if !r.inv.HasClient(client) {
 			return fmt.Errorf("unknown client %q", client)
 		}
+		// read metadata from ./clients/*/hive.yaml
 		meta, err := r.builder.ReadClientMetadata(client)
 		if err != nil {
 			return err
@@ -188,6 +192,7 @@ func (r *Runner) run(ctx context.Context, sim string, env SimEnv) (SimResult, er
 	}()
 
 	log15.Debug("starting simulator API server")
+	// start hiveproxy.front container, and receive request from hiveproxy.front and handle the tm.API() locally
 	server, err := r.container.ServeAPI(ctx, tm.API())
 	if err != nil {
 		log15.Error("can't start API server", "err", err)

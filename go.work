@@ -1,0 +1,22 @@
+go 1.18
+
+use (
+	.
+	./taiko
+	./hiveproxy
+	./simulators/devp2p
+	./simulators/eth2/engine
+	./simulators/eth2/testnet
+	./simulators/ethereum/consensus
+	./simulators/ethereum/engine
+	./simulators/ethereum/graphql
+	./simulators/ethereum/rpc
+	./simulators/ethereum/rpc-compat
+	./simulators/ethereum/sync
+	./simulators/smoke/clique
+	./simulators/smoke/genesis
+	./simulators/smoke/network
+	./simulators/taiko/rpc
+)
+
+replace github.com/ethereum/go-ethereum v1.10.25 => github.com/taikochain/taiko-geth v0.0.0-20221209070159-3ebf84e5c70f

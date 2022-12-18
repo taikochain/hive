@@ -416,7 +416,6 @@ func (b *BeaconClient) WaitForOptimisticState(ctx context.Context, timeoutSlots 
 	}
 }
 
-//
 func (bn *BeaconClient) GetLatestExecutionBeaconBlock(ctx context.Context) (*bellatrix.SignedBeaconBlock, error) {
 	var headInfo eth2api.BeaconBlockHeaderAndInfo
 	if exists, err := beaconapi.BlockHeader(ctx, bn.API, eth2api.BlockHead, &headInfo); err != nil {
