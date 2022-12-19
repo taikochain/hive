@@ -21,7 +21,7 @@ type Devnet struct {
 	L2Genesis *core.Genesis
 }
 
-type DevOption func(*Devnet) *Devnet
+type DevOption func(*Devnet)
 
 func NewDevnet(t *hivesim.T, c *Config, opts ...DevOption) *Devnet {
 	d := &Devnet{}
