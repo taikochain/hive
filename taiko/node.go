@@ -21,7 +21,7 @@ type Node struct {
 	TaikoAddr common.Address
 }
 
-type NodeOption func(*Node) *Node
+type NodeOption func(*Node)
 
 func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Node {
 	n := new(Node)
