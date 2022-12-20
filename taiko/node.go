@@ -2,6 +2,7 @@ package taiko
 
 import (
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,7 +19,8 @@ type Node struct {
 	*hivesim.Client
 	role      string
 	opts      []hivesim.StartOption
-	TaikoAddr common.Address
+	taikoAddr common.Address
+	isHardhat bool
 }
 
 type NodeOption func(*Node) *Node
@@ -41,8 +43,10 @@ func NewL1ELNode(t *hivesim.T, env *TestEnv) *ELNode {
 		WithNetworkID(env.Conf.L1.NetworkID),
 		WithCliquePeriod(env.Conf.L1.MineInterval),
 	}
-	n := NewNode(t, env.Clients.L1, opts...)
-	n.TaikoAddr = env.Conf.L1.RollupAddress
+	clientDef := env.Clients.GetL1(false)
+	n := NewNode(t, clientDef, opts...)
+	n.isHardhat = strings.Contains(clientDef.Name, "hardhat")
+	n.taikoAddr = env.Conf.L1.RollupAddress
 	elNode := (*ELNode)(n)
 	WaitELNodesUp(env.Context, t, elNode, 10*time.Second)
 	return elNode
@@ -83,7 +87,7 @@ func NewL2ELNode(t *hivesim.T, env *TestEnv, bootNodes string) *ELNode {
 		opts = append(opts, WithBootNode(bootNodes))
 	}
 	n := NewNode(t, env.Clients.L2, opts...)
-	n.TaikoAddr = env.Conf.L2.RollupAddress
+	n.taikoAddr = env.Conf.L2.RollupAddress
 	elNode := (*ELNode)(n)
 	WaitELNodesUp(env.Context, t, elNode, 10*time.Second)
 	return elNode

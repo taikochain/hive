@@ -24,31 +24,36 @@ func main() {
 		Name:        "taiko ops",
 		Description: "Test propose, sync and other things",
 	}
+	// suit.Add(&hivesim.TestSpec{
+	// 	Name:        "firstL2Block",
+	// 	Description: "Relevant tests for the generation of the first L2 block",
+	// 	Run:         firstL2Block,
+	// })
+	// suit.Add(&hivesim.TestSpec{
+	// 	Name:        "sync test",
+	// 	Description: "L2 block synchronization related tests",
+	// 	Run:         syncL2Block,
+	// })
 	suit.Add(&hivesim.TestSpec{
-		Name:        "firstL2Block",
-		Description: "Relevant tests for the generation of the first L2 block",
-		Run:         firstL2Block,
+		Name:        "l1 reorg test",
+		Description: "l1 reorg",
+		Run:         l1Reorg,
 	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "sync test",
-		Description: "L2 block synchronization related tests",
-		Run:         syncL2Block,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "tooManyPendingBlocks",
-		Description: "Too many pending blocks will block further proposes",
-		Run:         tooManyPendingBlocks,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "proposeInvalidTxListBytes",
-		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
-		Run:         proposeInvalidTxListBytes,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "proposeTxListIncludingInvalidTx",
-		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
-		Run:         proposeTxListIncludingInvalidTx,
-	})
+	// suit.Add(&hivesim.TestSpec{
+	// 	Name:        "tooManyPendingBlocks",
+	// 	Description: "Too many pending blocks will block further proposes",
+	// 	Run:         tooManyPendingBlocks,
+	// })
+	// suit.Add(&hivesim.TestSpec{
+	// 	Name:        "proposeInvalidTxListBytes",
+	// 	Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
+	// 	Run:         proposeInvalidTxListBytes,
+	// })
+	// suit.Add(&hivesim.TestSpec{
+	// 	Name:        "proposeTxListIncludingInvalidTx",
+	// 	Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
+	// 	Run:         proposeTxListIncludingInvalidTx,
+	// })
 	sim := hivesim.New()
 	hivesim.MustRun(sim, suit)
 }
@@ -56,7 +61,7 @@ func main() {
 func firstL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.DefaultGethEnv(ctx, t)
 	env.StartSingleNodeNet(t)
 
 	// generate the first L2 transaction
@@ -98,7 +103,7 @@ func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 func syncL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.DefaultGethEnv(ctx, t)
 	env.StartSingleNodeNet(t)
 
 	blockCnt := uint64(10)
@@ -157,42 +162,49 @@ func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	}
 }
 
-func l1Reorg(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
-	return func(t *hivesim.T) {
-		l1, l2, ctx := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0), env.Context
-		l2Height, err := l2.EthClient(t).BlockNumber(ctx)
-		require.NoError(t, err)
-		resetL2Height := l2Height / 2
-		t.Logf("resetL2Height=%v", resetL2Height)
-		info, err := l2.EthClient(t).L1OriginByID(ctx, big.NewInt(int64(resetL2Height)))
-		require.NoError(t, err)
-		resetL1Height := info.L1BlockHeight
-		t.Logf("resetL1Height=%v", resetL1Height)
-		l1Cli := l1.EthClient(t)
-		l1GethCli := l1.GethClient()
+func l1Reorg(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	env := taiko.DefaultHardhatEnv(ctx, t)
+	env.StartSingleNodeNet(t)
 
-		height, err := l1Cli.BlockNumber(ctx)
-		require.NoError(t, err)
-		nonceBeforeReorg, err := l1Cli.NonceAt(ctx, taiko.VaultAddr, big.NewInt(int64(height)))
-		require.NoError(t, err)
-		t.Logf("before revert nonce=%v", nonceBeforeReorg)
+	blockCnt := uint64(10)
+	env.GenSomeL2Blocks(t, blockCnt)
 
-		require.NoError(t, l1GethCli.SetHead(ctx, resetL1Height))
-		for {
-			l1Current, err := l1Cli.BlockNumber(ctx)
-			require.NoError(t, err)
-			t.Logf("l1Current=%v", l1Current)
+	l1, l2, ctx := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0), env.Context
+	l2Height, err := l2.EthClient(t).BlockNumber(ctx)
+	require.NoError(t, err)
+	resetL2Height := l2Height / 2
+	t.Logf("resetL2Height=%v", resetL2Height)
+	info, err := l2.EthClient(t).L1OriginByID(ctx, big.NewInt(int64(resetL2Height)))
+	require.NoError(t, err)
+	resetL1Height := info.L1BlockHeight
+	t.Logf("resetL1Height=%v", resetL1Height)
+	l1Cli := l1.EthClient(t)
+	l1GethCli := l1.GethClient()
 
-			env.L1Vault.SendL1TestTx(ctx, l1Cli, nonceBeforeReorg+1)
-			L2Height, err := l2.EthClient(t).BlockNumber(ctx)
-			require.NoError(t, err)
-			if L2Height == resetL2Height {
-				break
-			}
-			t.Logf("l2Current=%v", L2Height)
-			time.Sleep(10 * time.Second)
-			continue
+	height, err := l1Cli.BlockNumber(ctx)
+	require.NoError(t, err)
+	nonceBeforeReorg, err := l1Cli.NonceAt(ctx, taiko.VaultAddr, big.NewInt(int64(height)))
+	require.NoError(t, err)
+	t.Logf("before revert nonce=%v", nonceBeforeReorg)
+
+	// revert
+	require.NoError(t, l1GethCli.SetHead(ctx, resetL1Height))
+	for {
+		l1Current, err := l1Cli.BlockNumber(ctx)
+		require.NoError(t, err)
+		t.Logf("l1Current=%v", l1Current)
+		// send one l1
+		env.L1Vault.SendL1TestTx(ctx, l1Cli, nonceBeforeReorg+1)
+		L2Height, err := l2.EthClient(t).BlockNumber(ctx)
+		require.NoError(t, err)
+		if L2Height == resetL2Height {
+			break
 		}
+		t.Logf("l2Current=%v", L2Height)
+		time.Sleep(10 * time.Second)
+		continue
 	}
 }
 
@@ -202,7 +214,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.DefaultGethEnv(ctx, t)
 	env.StartL1L2Driver(t)
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
@@ -234,7 +246,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig, taiko.Roles(t, false))
 	env.StartL1L2(t)
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
@@ -265,7 +277,7 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.DefaultGethEnv(ctx, t)
 	env.StartL1L2Driver(t)
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)

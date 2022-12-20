@@ -33,13 +33,18 @@ func (e *ELNode) EngineEndpoint() string {
 
 func (e *ELNode) WsRpcEndpoint() string {
 	// carried over from older merge net ws connection problems, idk why clients are different
+	port := wsRPCPort
+	if e.isHardhat {
+		// hardhat listen http and ws on the same port
+		port = httpRPCPort
+	}
 	switch e.Type {
 	case "besu":
-		return fmt.Sprintf("ws://%v:%d/ws", e.IP, wsRPCPort)
+		return fmt.Sprintf("ws://%v:%d/ws", e.IP, port)
 	case "nethermind":
-		return fmt.Sprintf("http://%v:%d/ws", e.IP, wsRPCPort) // upgrade
+		return fmt.Sprintf("http://%v:%d/ws", e.IP, port) // upgrade
 	default:
-		return fmt.Sprintf("ws://%v:%d", e.IP, wsRPCPort)
+		return fmt.Sprintf("ws://%v:%d", e.IP, port)
 	}
 }
 
@@ -51,14 +56,14 @@ func (e *ELNode) EthClient(t *hivesim.T) *ethclient.Client {
 
 func (e *ELNode) TaikoL1Client(t *hivesim.T) *bindings.TaikoL1Client {
 	c := e.EthClient(t)
-	cli, err := bindings.NewTaikoL1Client(e.TaikoAddr, c)
+	cli, err := bindings.NewTaikoL1Client(e.taikoAddr, c)
 	require.NoError(t, err)
 	return cli
 }
 
 func (e *ELNode) TaikoL2Client(t *hivesim.T) *bindings.TaikoL2Client {
 	c := e.EthClient(t)
-	cli, err := bindings.NewTaikoL2Client(e.TaikoAddr, c)
+	cli, err := bindings.NewTaikoL2Client(e.taikoAddr, c)
 	require.NoError(t, err)
 	return cli
 }

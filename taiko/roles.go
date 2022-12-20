@@ -1,7 +1,10 @@
 package taiko
 
 import (
+	"strings"
+
 	"github.com/ethereum/hive/hivesim"
+	"github.com/prysmaticlabs/prysm/testing/require"
 	"github.com/taikoxyz/taiko-client/proposer"
 	"github.com/taikoxyz/taiko-client/prover"
 )
@@ -17,7 +20,7 @@ const (
 
 // ClientsByRole is a collection of ClientDefinitions, grouped by role.
 type ClientsByRole struct {
-	L1       *hivesim.ClientDefinition
+	L1       []*hivesim.ClientDefinition
 	L2       *hivesim.ClientDefinition
 	Driver   *hivesim.ClientDefinition
 	Proposer *hivesim.ClientDefinition
@@ -25,11 +28,28 @@ type ClientsByRole struct {
 	Contract *hivesim.ClientDefinition
 }
 
-func Roles(t *hivesim.T, clientDefs []*hivesim.ClientDefinition) *ClientsByRole {
+func (r *ClientsByRole) GetL1(isHardhat bool) *hivesim.ClientDefinition {
+	if isHardhat {
+		for _, d := range r.L1 {
+			if strings.Contains(d.Name, "taiko-l1-hardhat") {
+				return d
+			}
+		}
+	} else {
+		if len(r.L1) > 0 {
+			return r.L1[0]
+		}
+	}
+	return nil
+}
+
+func Roles(t *hivesim.T) *ClientsByRole {
+	clientDefs, err := t.Sim.ClientTypes()
+	require.NoError(t, err, "failed to retrieve list of client types: %v", err)
 	var out ClientsByRole
 	for _, client := range clientDefs {
 		if client.HasRole(taikoL1) {
-			out.L1 = client
+			out.L1 = append(out.L1, client)
 		}
 		if client.HasRole(taikoDriver) {
 			out.Driver = client
