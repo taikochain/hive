@@ -1,4 +1,5 @@
-FROM ethereum/client-go:latest
+ARG branch=latest
+FROM ethereum/client-go:$branch
 
 RUN apk add --update bash curl jq
 

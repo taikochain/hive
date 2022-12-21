@@ -91,25 +91,22 @@ func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
 }
 
 func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
-	env.StartL1L2ProposerDriver(t)
+	env.StartL1L2Driver(t, WithELNodeType("full"))
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(WithProverNode(NewProverNode(t, env, l1, l2)))
+	env.Net.Apply(
+		WithProverNode(NewProverNode(t, env, l1, l2)),
+		WithProposerNode(NewProposerNode(t, env, l1, l2)),
+	)
 }
 
-func (env *TestEnv) StartL1L2ProposerDriver(t *hivesim.T) {
-	env.StartL1L2Driver(t)
+func (env *TestEnv) StartL1L2Driver(t *hivesim.T, l2Opts ...NodeOption) {
+	env.StartL1L2(t, l2Opts...)
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(WithProposerNode(NewProposerNode(t, env, l1, l2)))
+	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2)))
 }
 
-func (env *TestEnv) StartL1L2Driver(t *hivesim.T) {
-	env.StartL1L2(t)
-	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2, false)))
-}
-
-func (env *TestEnv) StartL1L2(t *hivesim.T) {
-	l2 := NewL2ELNode(t, env, "")
+func (env *TestEnv) StartL1L2(t *hivesim.T, l2Opts ...NodeOption) {
+	l2 := NewL2ELNode(t, env, l2Opts...)
 	l1 := NewL1ELNode(t, env)
 	deployL1Contracts(t, env, l1, l2)
 	taikoL1 := l1.TaikoL1Client(t)

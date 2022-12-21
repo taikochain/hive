@@ -102,7 +102,7 @@ func syncL2Block(t *hivesim.T) {
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
 	env.StartSingleNodeNet(t)
 
-	blockCnt := uint64(20)
+	blockCnt := uint64(10)
 	env.GenSomeL2Blocks(t, blockCnt)
 
 	t.Run(hivesim.TestSpec{
@@ -111,52 +111,85 @@ func syncL2Block(t *hivesim.T) {
 		Run:         syncAllFromL1(t, env, blockCnt),
 	})
 	t.Run(hivesim.TestSpec{
-		Name:        "sync by p2p",
-		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth P2P",
-		Run:         syncByP2P(t, env),
+		Name:        "sync by snap",
+		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth snap mode",
+		Run:         syncBySnap(t, env),
 	})
 	t.Run(hivesim.TestSpec{
-		Name:        "l1Reorg",
-		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth P2P",
-		Run:         l1Reorg(t, env),
+		Name:        "sync by full",
+		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth full mode",
+		Run:         syncByFull(t, env),
+	})
+	t.Run(hivesim.TestSpec{
+		Name:        "sync by p2p and one by one",
+		Description: "For more complicated synchronization scenarios, first synchronize to latestVerifiedHeight through P2P, and then synchronize through one-by-one, and simulate the driver disconnection in the middle process.",
+		Run:         syncByBothP2PAndOneByOne(t, env),
 	})
 }
 
 func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv, height uint64) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
-		l2 := taiko.NewL2ELNode(t, env, "")
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2, false)
+		l2 := taiko.NewFullSyncL2ELNode(t, env)
+		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2)
 		taiko.WaitHeight(ctx, t, l2, taiko.GreaterEqual(height))
 	}
 }
 
-func syncByP2P(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func syncBySnap(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
-		// start new L2 engine and driver to sync by p2p
-		newL2 := taiko.NewL2ELNode(t, env, d.GetL2ENodes(t))
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, true)
-
+		// 1. start new L2 engine and driver to sync by p2p
+		newL2 := taiko.NewL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
+		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		// 2. newL2 should sync to LatestVerifiedHeight by snap
 		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(l1State.LatestVerifiedHeight))
+		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
+		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
 	}
 }
 
-func l1Reorg(t *hivesim.T, env *taiko.TestEnv) func(t *hivesim.T) {
+func syncByFull(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		l1 := env.Net.GetL1ELNode(0)
-		taikoL1 := l1.TaikoL1Client(t)
+		ctx, d := env.Context, env.Net
+		// 1. start new L2 engine and driver to sync by p2p
+		newL2 := taiko.NewFullSyncL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
+		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		// 2. newL2 should sync to LatestVerifiedHeight by snap
+		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
-		l1GethCli := l1.GethClient()
-		require.NoError(t, l1GethCli.SetHead(env.Context, big.NewInt(int64(l1State.GenesisHeight))))
-		l2 := env.Net.GetL2ELNode(0)
-		taiko.WaitHeight(env.Context, t, l2, func(get uint64) bool {
-			return get == 0
-		})
+		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
+		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
+	}
+}
+
+func syncByBothP2PAndOneByOne(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+	return func(t *hivesim.T) {
+		ctx, d := env.Context, env.Net
+		// 1. start new L2 engine and driver to sync by p2p
+		newL2 := taiko.NewFullSyncL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
+		newDriver := taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		// 2. newL2 should sync to LatestVerifiedHeight by p2p
+		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
+		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+		require.NoError(t, err)
+		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
+		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
+		// 3. newDriver should sync one by one from L1
+		blockCnt := uint64(10)
+		env.GenSomeL2Blocks(t, blockCnt)
+		heightOfOneByOne := heightOfP2PSyncTo + blockCnt
+		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfOneByOne))
+		// 4. stop newDriver, simulate the driver disconnection
+		t.Sim.StopClient(t.SuiteID, t.TestID, newDriver.Container)
+		// 5. restart newDriver, newL2 should sync to latest header by p2p
+		env.GenSomeL2Blocks(t, blockCnt)
+		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		heightOfResume := heightOfOneByOne + blockCnt
+		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfResume))
 	}
 }
 
@@ -167,7 +200,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2Driver(t)
+	env.StartL1L2Driver(t, taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 
@@ -199,7 +232,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2(t)
+	env.StartL1L2(t, taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
@@ -230,7 +263,7 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2Driver(t)
+	env.StartL1L2Driver(t, taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
