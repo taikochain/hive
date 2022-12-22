@@ -33,14 +33,14 @@ func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Nod
 }
 
 // NewL1ELNode starts a eth1 image and add it to the network
-func NewL1ELNode(t *hivesim.T, env *TestEnv) *ELNode {
+func NewL1ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
 	require.NotNil(t, env.Clients.L1)
-	opts := []NodeOption{
+	opts = append(opts,
 		WithRole("L1Engine"),
 		WithL1ChainID(env.Conf.L1.ChainID),
 		WithNetworkID(env.Conf.L1.NetworkID),
 		WithCliquePeriod(env.Conf.L1.MineInterval),
-	}
+	)
 	n := NewNode(t, env.Clients.L1, opts...)
 	n.TaikoAddr = env.Conf.L1.RollupAddress
 	elNode := (*ELNode)(n)
@@ -70,18 +70,19 @@ func deployL1Contracts(t *hivesim.T, env *TestEnv, l1Node, l2 *ELNode) {
 	t.Logf("Deploy contracts on %s %s(%s)", l1Node.Type, l1Node.Container, l1Node.IP)
 }
 
-func NewL2ELNode(t *hivesim.T, env *TestEnv, bootNodes string) *ELNode {
+func NewFullSyncL2ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
+	opts = append(opts, WithELNodeType("full"))
+	return NewL2ELNode(t, env, opts...)
+}
+
+func NewL2ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
 	require.NotNil(t, env.Clients.L2)
-	opts := []NodeOption{
+	opts = append(opts,
 		WithRole("L2Engine"),
 		WithJWTSecret(env.Conf.L2.JWTSecret),
-		WithELNodeType("full"),
 		WithNetworkID(env.Conf.L2.NetworkID),
 		WithLogLevel("3"),
-	}
-	if len(bootNodes) > 0 {
-		opts = append(opts, WithBootNode(bootNodes))
-	}
+	)
 	n := NewNode(t, env.Clients.L2, opts...)
 	n.TaikoAddr = env.Conf.L2.RollupAddress
 	elNode := (*ELNode)(n)
@@ -89,9 +90,9 @@ func NewL2ELNode(t *hivesim.T, env *TestEnv, bootNodes string) *ELNode {
 	return elNode
 }
 
-func NewDriverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, enableP2P bool) *Node {
+func NewDriverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
 	require.NotNil(t, env.Clients.Driver)
-	opts := []NodeOption{
+	opts = append(opts,
 		WithRole("driver"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
@@ -101,17 +102,14 @@ func NewDriverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, enableP2P bool) *
 		WithL2ContractAddress(env.Conf.L2.RollupAddress),
 		WithThrowawayBlockBuilderPrivateKey(env.Conf.L2.Throwawayer.PrivateKeyHex),
 		WithJWTSecret(env.Conf.L2.JWTSecret),
-	}
-	if enableP2P {
-		opts = append(opts, WithEnableL2P2P())
-	}
+	)
 	n := NewNode(t, env.Clients.Driver, opts...)
 	return n
 }
 
-func NewProposerNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode) *Node {
+func NewProposerNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
 	require.NotNil(t, env.Clients.Proposer)
-	opts := []NodeOption{
+	opts = append(opts,
 		WithRole("proposer"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
@@ -121,18 +119,17 @@ func NewProposerNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode) *Node {
 		WithProposerPrivateKey(env.Conf.L2.Proposer.PrivateKeyHex),
 		WithSuggestedFeeRecipient(env.Conf.L2.SuggestedFeeRecipient.Address),
 		WithProposeInterval(env.Conf.L2.ProposeInterval),
-	}
-
+	)
 	if env.Conf.L2.ProduceInvalidBlocksInterval != 0 {
 		opts = append(opts, WithProduceInvalidBlocksInterval(env.Conf.L2.ProduceInvalidBlocksInterval))
 	}
 	return NewNode(t, env.Clients.Proposer, opts...)
 }
 
-func NewProverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode) *Node {
+func NewProverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
 	require.NotNil(t, env.Clients.Prover)
 	addWhitelist(t, env, l1.EthClient(t))
-	opts := []NodeOption{
+	opts = append(opts,
 		WithRole("prover"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
@@ -140,7 +137,7 @@ func NewProverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode) *Node {
 		WithL1ContractAddress(env.Conf.L1.RollupAddress),
 		WithL2ContractAddress(env.Conf.L2.RollupAddress),
 		WithProverPrivateKey(env.Conf.L2.Prover.PrivateKeyHex),
-	}
+	)
 	return NewNode(t, env.Clients.Prover, opts...)
 }
 
