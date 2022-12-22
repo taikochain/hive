@@ -58,39 +58,37 @@ func firstL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartSingleNodeNet(t)
+	env.StartSingleNodeNet()
 
 	// generate the first L2 transaction
 	env.L2Vault.CreateAccount(ctx, env.Net.GetL2ELNode(0).EthClient(t), big.NewInt(params.Ether))
 
 	t.Run(hivesim.TestSpec{
-		Name:        "first L1 block",
-		Description: "",
-		Run:         firstL1Block(t, env),
+		Name: "first L1 block",
+		Run:  firstL1Block(env),
 	})
 
 	t.Run(hivesim.TestSpec{
 		Name:        "firstVerifiedL2Block",
 		Description: "watch prove event of the first L2 block on L1",
-		Run:         firstVerifiedL2Block(t, env),
+		Run:         firstVerifiedL2Block(env),
 	})
 }
 
-func firstL1Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func firstL1Block(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		env.GenCommitDelayBlocks(t)
-		taiko.WaitHeight(env.Context, t, env.Net.GetL1ELNode(0), taiko.GreaterEqual(1))
+		env.WaitHeight(env.Net.GetL1ELNode(0), taiko.GreaterEqual(1))
 	}
 }
 
 // wait the a L2 transaction be proposed and proved as a L2 block.
-func firstVerifiedL2Block(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func firstVerifiedL2Block(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.Net
-		l1, l2 := d.GetL1ELNode(0), d.GetL2ELNode(0)
-		blockHash := taiko.GetBlockHashByNumber(ctx, t, l2, common.Big1, true)
-		taiko.WaitProveEvent(ctx, t, l1, blockHash)
-		taiko.WaitStateChange(t, l1, func(psv *bindings.ProtocolStateVariables) bool {
+		l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+		blockHash := env.GetBlockHashByNumber(l2, common.Big1, true)
+		env.WaitProveEvent(l1, blockHash)
+		env.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 			return psv.LatestVerifiedHeight == 1
 		})
 	}
@@ -100,7 +98,7 @@ func syncL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartSingleNodeNet(t)
+	env.StartSingleNodeNet()
 
 	blockCnt := uint64(10)
 	env.GenSomeL2Blocks(t, blockCnt)
@@ -108,88 +106,87 @@ func syncL2Block(t *hivesim.T) {
 	t.Run(hivesim.TestSpec{
 		Name:        "sync from L1",
 		Description: "completes sync purely from L1 data to generate L2 block",
-		Run:         syncAllFromL1(t, env, blockCnt),
+		Run:         syncAllFromL1(env, blockCnt),
 	})
 	t.Run(hivesim.TestSpec{
 		Name:        "sync by snap",
 		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth snap mode",
-		Run:         syncBySnap(t, env),
+		Run:         syncBySnap(env),
 	})
 	t.Run(hivesim.TestSpec{
 		Name:        "sync by full",
 		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth full mode",
-		Run:         syncByFull(t, env),
+		Run:         syncByFull(env),
 	})
 	t.Run(hivesim.TestSpec{
 		Name:        "sync by p2p and one by one",
 		Description: "For more complicated synchronization scenarios, first synchronize to latestVerifiedHeight through P2P, and then synchronize through one-by-one, and simulate the driver disconnection in the middle process.",
-		Run:         syncByBothP2PAndOneByOne(t, env),
+		Run:         syncByBothP2PAndOneByOne(env),
 	})
 }
 
-func syncAllFromL1(t *hivesim.T, env *taiko.TestEnv, height uint64) func(*hivesim.T) {
+func syncAllFromL1(env *taiko.TestEnv, height uint64) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.Net
-		l2 := taiko.NewFullSyncL2ELNode(t, env)
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), l2)
-		taiko.WaitHeight(ctx, t, l2, taiko.GreaterEqual(height))
+		l2 := env.NewFullSyncL2ELNode()
+		env.NewDriverNode(env.Net.GetL1ELNode(0), l2)
+		env.WaitHeight(l2, taiko.GreaterEqual(height))
 	}
 }
 
-func syncBySnap(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func syncBySnap(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.Net
+		d := env.Net
 		// 1. start new L2 engine and driver to sync by p2p
-		newL2 := taiko.NewL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		newL2 := env.NewL2ELNode(taiko.WithBootNode(d.GetL2ENodes(t)))
+		env.NewDriverNode(d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
 		// 2. newL2 should sync to LatestVerifiedHeight by snap
 		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
 		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
+		env.WaitHeight(newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
 	}
 }
 
-func syncByFull(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func syncByFull(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.Net
+		d := env.Net
 		// 1. start new L2 engine and driver to sync by p2p
-		newL2 := taiko.NewFullSyncL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		newL2 := env.NewFullSyncL2ELNode(taiko.WithBootNode(d.GetL2ENodes(t)))
+		env.NewDriverNode(d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
 		// 2. newL2 should sync to LatestVerifiedHeight by snap
 		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
 		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
+		env.WaitHeight(newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
 	}
 }
 
-func syncByBothP2PAndOneByOne(t *hivesim.T, env *taiko.TestEnv) func(*hivesim.T) {
+func syncByBothP2PAndOneByOne(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
-		ctx, d := env.Context, env.Net
+		d := env.Net
 		// 1. start new L2 engine and driver to sync by p2p
-		newL2 := taiko.NewFullSyncL2ELNode(t, env, taiko.WithBootNode(d.GetL2ENodes(t)))
-		newDriver := taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		newL2 := env.NewFullSyncL2ELNode(taiko.WithBootNode(d.GetL2ENodes(t)))
+		newDriver := env.NewDriverNode(d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
 		// 2. newL2 should sync to LatestVerifiedHeight by p2p
 		taikoL1 := d.GetL1ELNode(0).TaikoL1Client(t)
 		l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 		require.NoError(t, err)
 		heightOfP2PSyncTo := l1State.LatestVerifiedHeight
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
+		env.WaitHeight(newL2, taiko.GreaterEqual(heightOfP2PSyncTo))
 		// 3. newDriver should sync one by one from L1
 		blockCnt := uint64(10)
 		env.GenSomeL2Blocks(t, blockCnt)
 		heightOfOneByOne := heightOfP2PSyncTo + blockCnt
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfOneByOne))
+		env.WaitHeight(newL2, taiko.GreaterEqual(heightOfOneByOne))
 		// 4. stop newDriver, simulate the driver disconnection
 		t.Sim.StopClient(t.SuiteID, t.TestID, newDriver.Container)
 		// 5. restart newDriver, newL2 should sync to latest header by p2p
 		env.GenSomeL2Blocks(t, blockCnt)
-		taiko.NewDriverNode(t, env, d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
+		env.NewDriverNode(d.GetL1ELNode(0), newL2, taiko.WithEnableL2P2P())
 		heightOfResume := heightOfOneByOne + blockCnt
-		taiko.WaitHeight(ctx, t, newL2, taiko.GreaterEqual(heightOfResume))
+		env.WaitHeight(newL2, taiko.GreaterEqual(heightOfResume))
 	}
 }
 
@@ -200,7 +197,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2Driver(t, taiko.WithELNodeType("full"))
+	env.StartL1L2Driver(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 
@@ -232,7 +229,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2(t, taiko.WithELNodeType("full"))
+	env.StartL1L2(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
@@ -247,8 +244,8 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	require.NoError(t, err)
 	env.GenCommitDelayBlocks(t)
 	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
-	taiko.WaitHeight(ctx, t, l1, taiko.GreaterEqual(1))
-	taiko.WaitStateChange(t, l1, func(psv *bindings.ProtocolStateVariables) bool {
+	env.WaitHeight(l1, taiko.GreaterEqual(1))
+	env.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
@@ -263,12 +260,12 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
-	env.StartL1L2Driver(t, taiko.WithELNodeType("full"))
+	env.StartL1L2Driver(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 
-	invalidTx := generateInvalidTransaction(t, env)
+	invalidTx := generateInvalidTransaction(env)
 
 	txListBytes, err := rlp.EncodeToBytes(types.Transactions{invalidTx})
 	require.NoError(t, err)
@@ -280,8 +277,8 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 
 	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
 
-	taiko.WaitHeight(ctx, t, l1, taiko.GreaterEqual(1))
-	taiko.WaitStateChange(t, l1, func(psv *bindings.ProtocolStateVariables) bool {
+	env.WaitHeight(l1, taiko.GreaterEqual(1))
+	env.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
@@ -294,7 +291,8 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 
 // generateInvalidTransaction creates a transaction with an invalid nonce to
 // current L2 world state.
-func generateInvalidTransaction(t *hivesim.T, env *taiko.TestEnv) *types.Transaction {
+func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
+	t := env.T
 	opts, err := bind.NewKeyedTransactorWithChainID(env.Conf.L2.Proposer.PrivateKey, env.Conf.L2.ChainID)
 	require.NoError(t, err)
 	l2 := env.Net.GetL2ELNode(0)

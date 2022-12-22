@@ -4,7 +4,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/hive/hivesim"
 )
 
@@ -17,15 +16,12 @@ type Devnet struct {
 	drivers   []*Node
 	proposers []*Node
 	provers   []*Node
-
-	L2Genesis *core.Genesis
 }
 
 type DevOption func(*Devnet)
 
 func NewDevnet(t *hivesim.T, c *Config, opts ...DevOption) *Devnet {
 	d := &Devnet{}
-	d.L2Genesis = core.TaikoGenesisBlock(c.L2.NetworkID)
 	for _, o := range opts {
 		o(d)
 	}

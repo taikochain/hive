@@ -60,6 +60,7 @@ type TestSpec struct {
 
 // TestEnv is the environment of a single test.
 type TestEnv struct {
+	T           *hivesim.T
 	Context     context.Context
 	Conf        *Config
 	Clients     *ClientsByRole
@@ -80,64 +81,65 @@ func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
 		t.Fatalf("failed to retrieve list of client types: %v", err)
 	}
 	clients := Roles(t, clientTypes)
-	env := &TestEnv{
+	e := &TestEnv{
+		T:       t,
 		Context: ctx,
 		Conf:    c,
 		Clients: clients,
 	}
-	env.L1Vault = NewVault(t, env.Conf.L1.ChainID)
-	env.L2Vault = NewVault(t, env.Conf.L2.ChainID)
-	return env
+	e.L1Vault = NewVault(t, c.L1.ChainID)
+	e.L2Vault = NewVault(t, c.L2.ChainID)
+	return e
 }
 
-func (env *TestEnv) StartSingleNodeNet(t *hivesim.T) {
-	env.StartL1L2Driver(t, WithELNodeType("full"))
-	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(
-		WithProverNode(NewProverNode(t, env, l1, l2)),
-		WithProposerNode(NewProposerNode(t, env, l1, l2)),
+func (e *TestEnv) StartSingleNodeNet() {
+	e.StartL1L2Driver(WithELNodeType("full"))
+	l1, l2 := e.Net.GetL1ELNode(0), e.Net.GetL2ELNode(0)
+	e.Net.Apply(
+		WithProverNode(e.NewProverNode(l1, l2)),
+		WithProposerNode(e.NewProposerNode(l1, l2)),
 	)
 }
 
-func (env *TestEnv) StartL1L2Driver(t *hivesim.T, l2Opts ...NodeOption) {
-	env.StartL1L2(t, l2Opts...)
-	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	env.Net.Apply(WithDriverNode(NewDriverNode(t, env, l1, l2)))
+func (e *TestEnv) StartL1L2Driver(l2Opts ...NodeOption) {
+	e.StartL1L2(l2Opts...)
+	l1, l2 := e.Net.GetL1ELNode(0), e.Net.GetL2ELNode(0)
+	e.Net.Apply(WithDriverNode(e.NewDriverNode(l1, l2)))
 }
 
-func (env *TestEnv) StartL1L2(t *hivesim.T, l2Opts ...NodeOption) {
-	l2 := NewL2ELNode(t, env, l2Opts...)
-	l1 := NewL1ELNode(t, env)
-	deployL1Contracts(t, env, l1, l2)
-	taikoL1 := l1.TaikoL1Client(t)
+func (e *TestEnv) StartL1L2(l2Opts ...NodeOption) {
+	l2 := e.NewL2ELNode(l2Opts...)
+	l1 := e.NewL1ELNode()
+	e.deployL1Contracts(l1, l2)
+	taikoL1 := l1.TaikoL1Client(e.T)
 	var err error
-	env.L1Constants, err = rpc.GetProtocolConstants(taikoL1, nil)
-	require.NoError(t, err)
+	e.L1Constants, err = rpc.GetProtocolConstants(taikoL1, nil)
+	require.NoError(e.T, err)
 	opts := []DevOption{
 		WithL2Node(l2),
 		WithL1Node(l1),
 	}
-	env.Net = NewDevnet(t, env.Conf, opts...)
+	e.Net = NewDevnet(e.T, e.Conf, opts...)
 }
 
-func (env *TestEnv) GenSomeL1Blocks(t *hivesim.T, cnt uint64) {
-	GenSomeBlocks(t, env.Context, env.Net.GetL1ELNode(0), env.L1Vault, cnt)
+func (e *TestEnv) GenSomeL1Blocks(t *hivesim.T, cnt uint64) {
+	e.GenSomeBlocks(e.Net.GetL1ELNode(0), e.L1Vault, cnt)
 }
 
-func (env *TestEnv) GenCommitDelayBlocks(t *hivesim.T) {
-	cnt := env.L1Constants.CommitDelayConfirmations.Uint64()
+func (e *TestEnv) GenCommitDelayBlocks(t *hivesim.T) {
+	cnt := e.L1Constants.CommitDelayConfirmations.Uint64()
 	if cnt == 0 {
 		return
 	}
-	n := env.Net.GetL1ELNode(0)
+	n := e.Net.GetL1ELNode(0)
 	require.NotNil(t, n)
-	GenSomeBlocks(t, env.Context, n, env.L1Vault, cnt)
+	e.GenSomeBlocks(n, e.L1Vault, cnt)
 }
 
-func (env *TestEnv) GenSomeL2Blocks(t *hivesim.T, cnt uint64) {
-	n := env.Net.GetL2ELNode(0)
+func (e *TestEnv) GenSomeL2Blocks(t *hivesim.T, cnt uint64) {
+	n := e.Net.GetL2ELNode(0)
 	require.NotNil(t, n)
-	GenSomeBlocks(t, env.Context, n, env.L2Vault, cnt)
+	e.GenSomeBlocks(n, e.L2Vault, cnt)
 }
 
 // Ctx returns a context with the default timeout.

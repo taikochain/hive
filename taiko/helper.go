@@ -12,13 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
-func WaitELNodesUp(ctx context.Context, t *hivesim.T, n *ELNode, timeout time.Duration) {
+func (e *TestEnv) WaitELNodesUp(n *ELNode, timeout time.Duration) {
+	ctx, t := e.Context, e.T
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	if _, err := n.EthClient(t).ChainID(ctx); err != nil {
@@ -26,7 +26,8 @@ func WaitELNodesUp(ctx context.Context, t *hivesim.T, n *ELNode, timeout time.Du
 	}
 }
 
-func WaitHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(uint64) bool) {
+func (e *TestEnv) WaitHeight(n *ELNode, f func(uint64) bool) {
+	ctx, t := e.Context, e.T
 	client := n.EthClient(t)
 	for {
 		height, err := client.BlockNumber(ctx)
@@ -39,9 +40,10 @@ func WaitHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(uint64) boo
 	}
 }
 
-func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, n *ELNode, num *big.Int, needWait bool) common.Hash {
+func (e *TestEnv) GetBlockHashByNumber(n *ELNode, num *big.Int, needWait bool) common.Hash {
+	ctx, t := e.Context, e.T
 	if needWait {
-		WaitHeight(ctx, t, n, GreaterEqual(num.Uint64()))
+		e.WaitHeight(n, GreaterEqual(num.Uint64()))
 	}
 	cli := n.EthClient(t)
 	block, err := cli.BlockByNumber(ctx, num)
@@ -49,15 +51,16 @@ func GetBlockHashByNumber(ctx context.Context, t *hivesim.T, n *ELNode, num *big
 	return block.Hash()
 }
 
-func WaitReceiptOK(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, t, n, hash, types.ReceiptStatusSuccessful)
+func (e *TestEnv) WaitReceiptOK(n *ELNode, hash common.Hash) (*types.Receipt, error) {
+	return e.WaitReceipt(n, hash, types.ReceiptStatusSuccessful)
 }
 
-func WaitReceiptFailed(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) (*types.Receipt, error) {
-	return WaitReceipt(ctx, t, n, hash, types.ReceiptStatusFailed)
+func (e *TestEnv) WaitReceiptFailed(n *ELNode, hash common.Hash) (*types.Receipt, error) {
+	return e.WaitReceipt(n, hash, types.ReceiptStatusFailed)
 }
 
-func WaitReceipt(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash, status uint64) (*types.Receipt, error) {
+func (e *TestEnv) WaitReceipt(n *ELNode, hash common.Hash, status uint64) (*types.Receipt, error) {
+	ctx, t := e.Context, e.T
 	client := n.EthClient(t)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -81,7 +84,8 @@ func WaitReceipt(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash,
 	}
 }
 
-func SubscribeHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(*big.Int) bool) {
+func (e *TestEnv) SubscribeHeight(n *ELNode, f func(*big.Int) bool) {
+	ctx, t := e.Context, e.T
 	ch := make(chan *types.Header)
 	cli := n.EthClient(t)
 	sub, err := cli.SubscribeNewHead(ctx, ch)
@@ -102,7 +106,8 @@ func SubscribeHeight(ctx context.Context, t *hivesim.T, n *ELNode, f func(*big.I
 	}
 }
 
-func WaitProveEvent(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Hash) {
+func (e *TestEnv) WaitProveEvent(n *ELNode, hash common.Hash) {
+	ctx, t := e.Context, e.T
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: ctx}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
@@ -127,7 +132,8 @@ func WaitProveEvent(ctx context.Context, t *hivesim.T, n *ELNode, hash common.Ha
 	}
 }
 
-func WaitStateChange(t *hivesim.T, n *ELNode, f func(*bindings.ProtocolStateVariables) bool) {
+func (e *TestEnv) WaitStateChange(n *ELNode, f func(*bindings.ProtocolStateVariables) bool) {
+	t := e.T
 	taikoL1 := n.TaikoL1Client(t)
 	for i := 0; i < 60; i++ {
 		s, err := rpc.GetProtocolStateVariables(taikoL1, nil)
@@ -140,7 +146,8 @@ func WaitStateChange(t *hivesim.T, n *ELNode, f func(*bindings.ProtocolStateVari
 	}
 }
 
-func GenSomeBlocks(t *hivesim.T, ctx context.Context, n *ELNode, v *Vault, cnt uint64) {
+func (e *TestEnv) GenSomeBlocks(n *ELNode, v *Vault, cnt uint64) {
+	ctx, t := e.Context, e.T
 	cli := n.EthClient(t)
 	curr, err := cli.BlockNumber(ctx)
 	require.NoError(t, err)
