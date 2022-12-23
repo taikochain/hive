@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
@@ -51,17 +52,15 @@ func (e *TestEnv) GetBlockHashByNumber(n *ELNode, num *big.Int, needWait bool) c
 	return block.Hash()
 }
 
-func (e *TestEnv) WaitReceiptOK(n *ELNode, hash common.Hash) (*types.Receipt, error) {
-	return e.WaitReceipt(n, hash, types.ReceiptStatusSuccessful)
+func WaitReceiptOK(ctx context.Context, cli *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, cli, hash, types.ReceiptStatusSuccessful)
 }
 
-func (e *TestEnv) WaitReceiptFailed(n *ELNode, hash common.Hash) (*types.Receipt, error) {
-	return e.WaitReceipt(n, hash, types.ReceiptStatusFailed)
+func WaitReceiptFailed(ctx context.Context, cli *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
+	return WaitReceipt(ctx, cli, hash, types.ReceiptStatusFailed)
 }
 
-func (e *TestEnv) WaitReceipt(n *ELNode, hash common.Hash, status uint64) (*types.Receipt, error) {
-	ctx, t := e.Context, e.T
-	client := n.EthClient(t)
+func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash, status uint64) (*types.Receipt, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
