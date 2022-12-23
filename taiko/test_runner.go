@@ -162,21 +162,17 @@ type RunTestsParams struct {
 	Concurrency int64
 }
 
-func RunTests(ctx context.Context, t *hivesim.T, params *RunTestsParams) {
+func RunTests(env *TestEnv, params *RunTestsParams) {
 	s := semaphore.NewWeighted(params.Concurrency)
 	var done int
 	doneCh := make(chan struct{})
+
+	t, ctx := env.T, env.Context
 
 	for _, test := range params.Tests {
 		go func(test *TestSpec) {
 			require.NoError(t, s.Acquire(ctx, 1))
 			defer s.Release(1)
-			env := &TestEnv{
-				Context: ctx,
-				Net:     params.Devnet,
-			}
-
-			require.NoError(t, s.Acquire(ctx, 1))
 			t.Run(hivesim.TestSpec{
 				Name:        test.Name,
 				Description: test.Description,
