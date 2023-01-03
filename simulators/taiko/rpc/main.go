@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/taiko"
 )
@@ -90,8 +91,12 @@ func runAllTests(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	d := taiko.NewDevnet(ctx, t)
+	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env.StartSingleNodeNet()
+	d := env.Net
 	l2 := d.GetL2ELNode(0)
+	l2Genesis := core.TaikoGenesisBlock(taiko.DefaultConfig.L2.NetworkID)
+
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.
 	adaptedTests := make([]*taiko.TestSpec, len(tests))
@@ -102,16 +107,16 @@ func runAllTests(t *hivesim.T) {
 			Run: func(t *hivesim.T, env *taiko.TestEnv) {
 				switch test.Name[:strings.IndexByte(test.Name, '/')] {
 				case "http":
-					RunHTTP(t, l2.Client, d.L2Vault, d.L2Genesis, test.Run)
+					RunHTTP(t, l2.Client, env.L2Vault, l2Genesis, test.Run)
 				case "ws":
-					RunWS(t, l2.Client, d.L2Vault, d.L2Genesis, test.Run)
+					RunWS(t, l2.Client, env.L2Vault, l2Genesis, test.Run)
 				default:
 					panic("bad test prefix in name " + test.Name)
 				}
 			},
 		}
 	}
-	taiko.RunTests(ctx, t, &taiko.RunTestsParams{
+	taiko.RunTests(env, &taiko.RunTestsParams{
 		Devnet:      d,
 		Tests:       adaptedTests,
 		Concurrency: 40,

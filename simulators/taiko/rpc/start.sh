@@ -59,6 +59,3 @@
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
 
 set -e
-
-cat /genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/1336/g" /genesis.json
-cat /genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/0/g" /genesis.json

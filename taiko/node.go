@@ -33,128 +33,128 @@ func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Nod
 }
 
 // NewL1ELNode starts a eth1 image and add it to the network
-func NewL1ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
-	require.NotNil(t, env.Clients.L1)
+func (e *TestEnv) NewL1ELNode(opts ...NodeOption) *ELNode {
+	require.NotNil(e.T, e.Clients.L1)
 	opts = append(opts,
 		WithRole("L1Engine"),
-		WithL1ChainID(env.Conf.L1.ChainID),
-		WithNetworkID(env.Conf.L1.NetworkID),
-		WithCliquePeriod(env.Conf.L1.MineInterval),
+		WithL1ChainID(e.Conf.L1.ChainID),
+		WithNetworkID(e.Conf.L1.NetworkID),
+		WithCliquePeriod(e.Conf.L1.MineInterval),
 	)
-	n := NewNode(t, env.Clients.L1, opts...)
-	n.TaikoAddr = env.Conf.L1.RollupAddress
+	n := NewNode(e.T, e.Clients.L1, opts...)
+	n.TaikoAddr = e.Conf.L1.RollupAddress
 	elNode := (*ELNode)(n)
-	WaitELNodesUp(env.Context, t, elNode, 10*time.Second)
+	e.WaitELNodesUp(elNode, 10*time.Second)
 	return elNode
 }
 
 // deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func deployL1Contracts(t *hivesim.T, env *TestEnv, l1Node, l2 *ELNode) {
-	require.NotNil(t, env.Clients.Contract)
-	l2GenesisHash := GetBlockHashByNumber(env.Context, t, l2, common.Big0, false)
+func (e *TestEnv) deployL1Contracts(l1Node, l2 *ELNode) {
+	require.NotNil(e.T, e.Clients.Contract)
+	l2GenesisHash := e.GetBlockHashByNumber(l2, common.Big0, false)
 	opts := []NodeOption{
 		WithNoCheck(),
-		WithPrivateKey(env.Conf.L1.Deployer.PrivateKeyHex),
-		WithL1DeployerAddress(env.Conf.L1.Deployer.Address),
+		WithPrivateKey(e.Conf.L1.Deployer.PrivateKeyHex),
+		WithL1DeployerAddress(e.Conf.L1.Deployer.Address),
 		WithL2GenesisBlockHash(l2GenesisHash),
-		WithL2ContractAddress(env.Conf.L2.RollupAddress),
+		WithL2ContractAddress(e.Conf.L2.RollupAddress),
 		WithMainnetUrl(l1Node.HttpRpcEndpoint()),
-		WithL2ChainID(env.Conf.L2.ChainID),
+		WithL2ChainID(e.Conf.L2.ChainID),
 	}
-	n := NewNode(t, env.Clients.Contract, opts...)
+	n := NewNode(e.T, e.Clients.Contract, opts...)
 	result, err := n.Exec("deploy.sh")
 	if err != nil || result.ExitCode != 0 {
-		t.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %v",
+		e.T.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %v",
 			l1Node.Container, err, result)
 	}
-	t.Logf("Deploy contracts on %s %s(%s)", l1Node.Type, l1Node.Container, l1Node.IP)
+	e.T.Logf("Deploy contracts on %s %s(%s)", l1Node.Type, l1Node.Container, l1Node.IP)
 }
 
-func NewFullSyncL2ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
+func (e *TestEnv) NewFullSyncL2ELNode(opts ...NodeOption) *ELNode {
 	opts = append(opts, WithELNodeType("full"))
-	return NewL2ELNode(t, env, opts...)
+	return e.NewL2ELNode(opts...)
 }
 
-func NewL2ELNode(t *hivesim.T, env *TestEnv, opts ...NodeOption) *ELNode {
-	require.NotNil(t, env.Clients.L2)
+func (e *TestEnv) NewL2ELNode(opts ...NodeOption) *ELNode {
+	require.NotNil(e.T, e.Clients.L2)
 	opts = append(opts,
 		WithRole("L2Engine"),
-		WithJWTSecret(env.Conf.L2.JWTSecret),
-		WithNetworkID(env.Conf.L2.NetworkID),
+		WithJWTSecret(e.Conf.L2.JWTSecret),
+		WithNetworkID(e.Conf.L2.NetworkID),
 		WithLogLevel("3"),
 	)
-	n := NewNode(t, env.Clients.L2, opts...)
-	n.TaikoAddr = env.Conf.L2.RollupAddress
+	n := NewNode(e.T, e.Clients.L2, opts...)
+	n.TaikoAddr = e.Conf.L2.RollupAddress
 	elNode := (*ELNode)(n)
-	WaitELNodesUp(env.Context, t, elNode, 10*time.Second)
+	e.WaitELNodesUp(elNode, 10*time.Second)
 	return elNode
 }
 
-func NewDriverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(t, env.Clients.Driver)
+func (e *TestEnv) NewDriverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
+	require.NotNil(e.T, e.Clients.Driver)
 	opts = append(opts,
 		WithRole("driver"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
 		WithL2EngineEndpoint(l2.EngineEndpoint()),
-		WithL1ContractAddress(env.Conf.L1.RollupAddress),
-		WithL2ContractAddress(env.Conf.L2.RollupAddress),
-		WithThrowawayBlockBuilderPrivateKey(env.Conf.L2.Throwawayer.PrivateKeyHex),
-		WithJWTSecret(env.Conf.L2.JWTSecret),
+		WithL1ContractAddress(e.Conf.L1.RollupAddress),
+		WithL2ContractAddress(e.Conf.L2.RollupAddress),
+		WithThrowawayBlockBuilderPrivateKey(e.Conf.L2.Throwawayer.PrivateKeyHex),
+		WithJWTSecret(e.Conf.L2.JWTSecret),
 	)
-	n := NewNode(t, env.Clients.Driver, opts...)
+	n := NewNode(e.T, e.Clients.Driver, opts...)
 	return n
 }
 
-func NewProposerNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(t, env.Clients.Proposer)
+func (e *TestEnv) NewProposerNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
+	require.NotNil(e.T, e.Clients.Proposer)
 	opts = append(opts,
 		WithRole("proposer"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
-		WithL1ContractAddress(env.Conf.L1.RollupAddress),
-		WithL2ContractAddress(env.Conf.L2.RollupAddress),
-		WithProposerPrivateKey(env.Conf.L2.Proposer.PrivateKeyHex),
-		WithSuggestedFeeRecipient(env.Conf.L2.SuggestedFeeRecipient.Address),
-		WithProposeInterval(env.Conf.L2.ProposeInterval),
+		WithL1ContractAddress(e.Conf.L1.RollupAddress),
+		WithL2ContractAddress(e.Conf.L2.RollupAddress),
+		WithProposerPrivateKey(e.Conf.L2.Proposer.PrivateKeyHex),
+		WithSuggestedFeeRecipient(e.Conf.L2.SuggestedFeeRecipient.Address),
+		WithProposeInterval(e.Conf.L2.ProposeInterval),
 	)
-	if env.Conf.L2.ProduceInvalidBlocksInterval != 0 {
-		opts = append(opts, WithProduceInvalidBlocksInterval(env.Conf.L2.ProduceInvalidBlocksInterval))
+	if e.Conf.L2.ProduceInvalidBlocksInterval != 0 {
+		opts = append(opts, WithProduceInvalidBlocksInterval(e.Conf.L2.ProduceInvalidBlocksInterval))
 	}
-	return NewNode(t, env.Clients.Proposer, opts...)
+	return NewNode(e.T, e.Clients.Proposer, opts...)
 }
 
-func NewProverNode(t *hivesim.T, env *TestEnv, l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(t, env.Clients.Prover)
-	addWhitelist(t, env, l1.EthClient(t))
+func (e *TestEnv) NewProverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
+	require.NotNil(e.T, e.Clients.Prover)
+	e.addWhitelist(l1.EthClient(e.T))
 	opts = append(opts,
 		WithRole("prover"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
-		WithL1ContractAddress(env.Conf.L1.RollupAddress),
-		WithL2ContractAddress(env.Conf.L2.RollupAddress),
-		WithProverPrivateKey(env.Conf.L2.Prover.PrivateKeyHex),
+		WithL1ContractAddress(e.Conf.L1.RollupAddress),
+		WithL2ContractAddress(e.Conf.L2.RollupAddress),
+		WithProverPrivateKey(e.Conf.L2.Prover.PrivateKeyHex),
 	)
-	return NewNode(t, env.Clients.Prover, opts...)
+	return NewNode(e.T, e.Clients.Prover, opts...)
 }
 
-func addWhitelist(t *hivesim.T, env *TestEnv, cli *ethclient.Client) {
-	taikoL1, err := bindings.NewTaikoL1Client(env.Conf.L1.RollupAddress, cli)
-	require.NoError(t, err)
+func (e *TestEnv) addWhitelist(cli *ethclient.Client) {
+	taikoL1, err := bindings.NewTaikoL1Client(e.Conf.L1.RollupAddress, cli)
+	require.NoError(e.T, err)
 
-	opts, err := bind.NewKeyedTransactorWithChainID(env.Conf.L1.Deployer.PrivateKey, env.Conf.L1.ChainID)
-	require.NoError(t, err)
+	opts, err := bind.NewKeyedTransactorWithChainID(e.Conf.L1.Deployer.PrivateKey, e.Conf.L1.ChainID)
+	require.NoError(e.T, err)
 
 	opts.GasTipCap = big.NewInt(1500000000)
-	tx, err := taikoL1.WhitelistProver(opts, env.Conf.L2.Prover.Address, true)
-	require.NoError(t, err)
-	receipt, err := rpc.WaitReceipt(env.Context, cli, tx)
-	require.NoError(t, err)
+	tx, err := taikoL1.WhitelistProver(opts, e.Conf.L2.Prover.Address, true)
+	require.NoError(e.T, err)
+	receipt, err := rpc.WaitReceipt(e.Context, cli, tx)
+	require.NoError(e.T, err)
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		t.Fatal("Failed to commit transactions list", "txHash", receipt.TxHash)
+		e.T.Fatal("Failed to commit transactions list", "txHash", receipt.TxHash)
 	}
-	t.Log("Add prover to whitelist finished", "height", receipt.BlockNumber)
+	e.T.Log("Add prover to whitelist finished", "height", receipt.BlockNumber)
 }
