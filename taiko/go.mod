@@ -2,11 +2,15 @@ module github.com/ethereum/hive/taiko
 
 go 1.18
 
+replace (
+	github.com/ethereum/go-ethereum v1.10.26 => github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123
+)
+
 require (
-	github.com/ethereum/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/ethereum/hive v0.0.0-20221028130025-473d051e991a
 	github.com/stretchr/testify v1.8.1
-	github.com/taikoxyz/taiko-client v0.1.8
+	github.com/taikoxyz/taiko-client v0.2.2
 	golang.org/x/sync v0.1.0
 )
 

@@ -1,17 +1,11 @@
 package taiko
 
 import (
-	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
-	"github.com/taikoxyz/taiko-client/bindings"
-	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
 type Node struct {
@@ -128,7 +122,6 @@ func (e *TestEnv) NewProposerNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
 
 func (e *TestEnv) NewProverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
 	require.NotNil(e.T, e.Clients.Prover)
-	e.addWhitelist(l1.EthClient(e.T))
 	opts = append(opts,
 		WithRole("prover"),
 		WithNoCheck(),
@@ -139,22 +132,4 @@ func (e *TestEnv) NewProverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
 		WithProverPrivateKey(e.Conf.L2.Prover.PrivateKeyHex),
 	)
 	return NewNode(e.T, e.Clients.Prover, opts...)
-}
-
-func (e *TestEnv) addWhitelist(cli *ethclient.Client) {
-	taikoL1, err := bindings.NewTaikoL1Client(e.Conf.L1.RollupAddress, cli)
-	require.NoError(e.T, err)
-
-	opts, err := bind.NewKeyedTransactorWithChainID(e.Conf.L1.Deployer.PrivateKey, e.Conf.L1.ChainID)
-	require.NoError(e.T, err)
-
-	opts.GasTipCap = big.NewInt(1500000000)
-	tx, err := taikoL1.WhitelistProver(opts, e.Conf.L2.Prover.Address, true)
-	require.NoError(e.T, err)
-	receipt, err := rpc.WaitReceipt(e.Context, cli, tx)
-	require.NoError(e.T, err)
-	if receipt.Status != types.ReceiptStatusSuccessful {
-		e.T.Fatal("Failed to commit transactions list", "txHash", receipt.TxHash)
-	}
-	e.T.Log("Add prover to whitelist finished", "height", receipt.BlockNumber)
 }

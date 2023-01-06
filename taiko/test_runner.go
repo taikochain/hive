@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
-	"github.com/taikoxyz/taiko-client/pkg/rpc"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -60,14 +59,14 @@ type TestSpec struct {
 
 // TestEnv is the environment of a single test.
 type TestEnv struct {
-	T           *hivesim.T
-	Context     context.Context
-	Conf        *Config
-	Clients     *ClientsByRole
-	L1Vault     *Vault
-	L2Vault     *Vault
-	Net         *Devnet
-	L1Constants *bindings.ProtocolConstants
+	T         *hivesim.T
+	Context   context.Context
+	Conf      *Config
+	Clients   *ClientsByRole
+	L1Vault   *Vault
+	L2Vault   *Vault
+	Net       *Devnet
+	TaikoConf bindings.TaikoDataConfig
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
 	// timeout and cancels the previous one.
@@ -113,7 +112,7 @@ func (e *TestEnv) StartL1L2(l2Opts ...NodeOption) {
 	e.deployL1Contracts(l1, l2)
 	taikoL1 := l1.TaikoL1Client(e.T)
 	var err error
-	e.L1Constants, err = rpc.GetProtocolConstants(taikoL1, nil)
+	e.TaikoConf, err = taikoL1.GetConfig(nil)
 	require.NoError(e.T, err)
 	opts := []DevOption{
 		WithL2Node(l2),
@@ -127,7 +126,7 @@ func (e *TestEnv) GenSomeL1Blocks(t *hivesim.T, cnt uint64) {
 }
 
 func (e *TestEnv) GenCommitDelayBlocks(t *hivesim.T) {
-	cnt := e.L1Constants.CommitDelayConfirmations.Uint64()
+	cnt := e.TaikoConf.CommitConfirmations.Uint64()
 	if cnt == 0 {
 		return
 	}
