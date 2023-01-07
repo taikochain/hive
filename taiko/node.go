@@ -1,6 +1,8 @@
 package taiko
 
 import (
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
@@ -42,7 +44,6 @@ func (e *TestEnv) NewL1ELNode(l2 *ELNode, opts ...NodeOption) *ELNode {
 	)
 	n := NewNode(t, def, opts...)
 	l1 := &ELNode{Node: n}
-	l1.deploy = getL1Deployments()
 	e.deployL1Contracts(l1, l2)
 	return l1
 }
@@ -70,22 +71,22 @@ func (e *TestEnv) deployL1Contracts(l1, l2 *ELNode) {
 	t.Log("Deploy result begin")
 	t.Log(result.Stdout)
 	t.Log("Deploy result end")
+	l1.deploy = n.getL1Deployments(t)
 }
 
-func getL1Deployments() *deployResult {
-	return &deployResult{
-		rollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
-		bridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
-		vaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
+func (n *Node) getL1Deployments(t *hivesim.T) *deployResult {
+	query := func(key string) common.Address {
+		result, err := n.Exec("deploy_result.sh", key)
+		if err != nil || result.ExitCode != 0 {
+			t.Fatalf("failed to get deploy result on L1 engine node %s, error: %v, result: %+v",
+				n.Container, err, result)
+		}
+		return common.HexToAddress(strings.TrimSpace(result.Stdout))
 	}
-}
-
-func getL2Deployments() *deployResult {
 	return &deployResult{
-		rollupAddress:    common.HexToAddress("0x0000777700000000000000000000000000000001"),
-		bridgeAddress:    common.HexToAddress("0x0000777700000000000000000000000000000004"),
-		vaultAddress:     common.HexToAddress("0x0000777700000000000000000000000000000002"),
-		testERC20Address: common.HexToAddress("0x0000777700000000000000000000000000000005"),
+		rollupAddress: query(".contracts.TaikoL1"),
+		bridgeAddress: query(".contracts.Bridge"),
+		vaultAddress:  query(".contracts.TokenVault"),
 	}
 }
 
@@ -104,7 +105,7 @@ func (e *TestEnv) NewL2ELNode(opts ...NodeOption) *ELNode {
 	)
 	n := NewNode(t, def, opts...)
 	l2 := &ELNode{Node: n}
-	l2.deploy = getL2Deployments()
+	l2.deploy = l2.getL2Deployments(t)
 	g, err := GetBlockHashByNumber(ctx, l2, common.Big0, false)
 	require.NoError(t, err)
 	l2.genesisHash = g
