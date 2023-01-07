@@ -21,11 +21,7 @@ func DefaultConfig() *Config {
 			ChainID:   big.NewInt(1336),
 			NetworkID: 31336,
 
-			Deployer:      deployAccount,
-			RollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
-			BridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
-			VaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
-
+			Deployer:     deployAccount,
 			MineInterval: 0,
 		},
 		L2: &L2Config{
@@ -35,11 +31,8 @@ func DefaultConfig() *Config {
 			SuggestedFeeRecipient: deployAccount,
 			Proposer:              deployAccount,
 			Prover:                proverAccount,
-			RollupAddress:         common.HexToAddress("0x0000777700000000000000000000000000000001"),
-			BridgeAddress:         common.HexToAddress("0x0000777700000000000000000000000000000004"),
-			VaultAddress:          common.HexToAddress("0x0000777700000000000000000000000000000002"),
-			TestERC20Address:      common.HexToAddress("0x0000777700000000000000000000000000000005"),
-			Throwawayer:           deployAccount,
+
+			Throwawayer: deployAccount,
 
 			ProposeInterval: time.Second,
 			JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
@@ -67,15 +60,9 @@ func NewAccount(privKeyHex string) (*Account, error) {
 }
 
 type L1Config struct {
-	ChainID   *big.Int
-	NetworkID uint64
-
-	Deployer         *Account
-	RollupAddress    common.Address
-	BridgeAddress    common.Address
-	VaultAddress     common.Address
-	TestERC20Address common.Address
-
+	ChainID      *big.Int
+	NetworkID    uint64
+	Deployer     *Account
 	MineInterval uint64
 }
 
@@ -87,14 +74,9 @@ type L2Config struct {
 	SuggestedFeeRecipient *Account // suggested fee recipient account
 	Prover                *Account // L1 prover account for prove zk proof
 	Proposer              *Account // L1 proposer account for propose L1 txList
-	RollupAddress         common.Address
-	BridgeAddress         common.Address
-	VaultAddress          common.Address
-	TestERC20Address      common.Address
 
-	ProduceInvalidBlocksInterval uint64
-	ProposeInterval              time.Duration
-	JWTSecret                    string
+	ProposeInterval time.Duration
+	JWTSecret       string
 }
 
 type Config struct {

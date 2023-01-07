@@ -160,14 +160,6 @@ func WithProposeInterval(t time.Duration) NodeOption {
 	}
 }
 
-func WithProduceInvalidBlocksInterval(seconds uint64) NodeOption {
-	return func(n *Node) {
-		n.opts = append(n.opts, hivesim.Params{
-			envTaikoProduceInvalidBlocksInterval: strconv.FormatUint(seconds, 10),
-		})
-	}
-}
-
 func WithProverPrivateKey(key string) NodeOption {
 	return func(n *Node) {
 		n.opts = append(n.opts, hivesim.Params{

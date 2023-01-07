@@ -54,8 +54,8 @@ func NewProposerConfig(env *TestEnv, l1, l2 *ELNode) *proposer.Config {
 	return &proposer.Config{
 		L1Endpoint:              l1.WsRpcEndpoint(),
 		L2Endpoint:              l2.WsRpcEndpoint(),
-		TaikoL1Address:          env.Conf.L1.RollupAddress,
-		TaikoL2Address:          env.Conf.L2.RollupAddress,
+		TaikoL1Address:          l1.deploy.rollupAddress,
+		TaikoL2Address:          l2.deploy.rollupAddress,
 		L1ProposerPrivKey:       env.Conf.L2.Proposer.PrivateKey,
 		L2SuggestedFeeRecipient: env.Conf.L2.SuggestedFeeRecipient.Address,
 		ProposeInterval:         &env.Conf.L2.ProposeInterval,

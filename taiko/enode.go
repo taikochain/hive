@@ -3,10 +3,9 @@ package taiko
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
-	"github.com/ethereum/hive/hivesim"
-	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
@@ -21,7 +20,11 @@ const (
 	enginePort  = 8551
 )
 
-type ELNode Node
+type ELNode struct {
+	*Node
+	deploy      *deployResult
+	genesisHash common.Hash
+}
 
 func (e *ELNode) HttpRpcEndpoint() string {
 	return fmt.Sprintf("http://%v:%d", e.IP, httpRPCPort)
@@ -43,24 +46,36 @@ func (e *ELNode) WsRpcEndpoint() string {
 	}
 }
 
-func (e *ELNode) EthClient(t *hivesim.T) *ethclient.Client {
+func (e *ELNode) EthClient() (*ethclient.Client, error) {
 	cli, err := ethclient.Dial(e.WsRpcEndpoint())
-	require.NoError(t, err)
-	return cli
+	if err != nil {
+		return nil, err
+	}
+	return cli, nil
 }
 
-func (e *ELNode) TaikoL1Client(t *hivesim.T) *bindings.TaikoL1Client {
-	c := e.EthClient(t)
-	cli, err := bindings.NewTaikoL1Client(e.TaikoAddr, c)
-	require.NoError(t, err)
-	return cli
+func (e *ELNode) TaikoL1Client() (*bindings.TaikoL1Client, error) {
+	c, err := e.EthClient()
+	if err != nil {
+		return nil, err
+	}
+	cli, err := bindings.NewTaikoL1Client(e.deploy.rollupAddress, c)
+	if err != nil {
+		return nil, err
+	}
+	return cli, nil
 }
 
-func (e *ELNode) TaikoL2Client(t *hivesim.T) *bindings.TaikoL2Client {
-	c := e.EthClient(t)
-	cli, err := bindings.NewTaikoL2Client(e.TaikoAddr, c)
-	require.NoError(t, err)
-	return cli
+func (e *ELNode) TaikoL2Client() (*bindings.TaikoL2Client, error) {
+	c, err := e.EthClient()
+	if err != nil {
+		return nil, err
+	}
+	cli, err := bindings.NewTaikoL2Client(e.deploy.rollupAddress, c)
+	if err != nil {
+		return nil, err
+	}
+	return cli, nil
 }
 
 func (e *ELNode) GethClient() *gethclient.Client {

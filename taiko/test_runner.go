@@ -108,12 +108,13 @@ func (e *TestEnv) StartL1L2Driver(l2Opts ...NodeOption) {
 }
 
 func (e *TestEnv) StartL1L2(l2Opts ...NodeOption) {
+	t := e.T
 	l2 := e.NewL2ELNode(l2Opts...)
-	l1 := e.NewL1ELNode()
-	e.deployL1Contracts(l1, l2)
-	taikoL1 := l1.TaikoL1Client(e.T)
+	l1 := e.NewL1ELNode(l2)
+	taikoL1, err := l1.TaikoL1Client()
+	require.NoError(t, err)
 	c, err := taikoL1.GetConfig(nil)
-	require.NoError(e.T, err)
+	require.NoError(t, err)
 	e.TaikoConf = &c
 	opts := []DevOption{
 		WithL2Node(l2),
@@ -123,23 +124,29 @@ func (e *TestEnv) StartL1L2(l2Opts ...NodeOption) {
 }
 
 func (e *TestEnv) GenSomeL1Blocks(t *hivesim.T, cnt uint64) {
-	e.GenSomeBlocks(e.Net.GetL1ELNode(0), e.L1Vault, cnt)
+	t, ctx := e.T, e.Context
+	require.NoError(t, GenSomeBlocks(ctx, e.Net.GetL1ELNode(0), e.L1Vault, cnt))
+	t.Logf("generate %d L2 blocks", cnt)
 }
 
 func (e *TestEnv) GenCommitDelayBlocks(t *hivesim.T) {
+	t, ctx := e.T, e.Context
 	cnt := e.TaikoConf.CommitConfirmations.Uint64()
 	if cnt == 0 {
 		return
 	}
 	n := e.Net.GetL1ELNode(0)
 	require.NotNil(t, n)
-	e.GenSomeBlocks(n, e.L1Vault, cnt)
+	require.NoError(t, GenSomeBlocks(ctx, n, e.L1Vault, cnt))
+	t.Logf("generate %d L2 blocks", cnt)
 }
 
 func (e *TestEnv) GenSomeL2Blocks(t *hivesim.T, cnt uint64) {
+	t, ctx := e.T, e.Context
 	n := e.Net.GetL2ELNode(0)
 	require.NotNil(t, n)
-	e.GenSomeBlocks(n, e.L2Vault, cnt)
+	require.NoError(t, GenSomeBlocks(ctx, n, e.L2Vault, cnt))
+	t.Logf("generate %d L2 blocks", cnt)
 }
 
 // Ctx returns a context with the default timeout.
