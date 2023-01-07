@@ -58,7 +58,7 @@ func NewProposerConfig(env *TestEnv, l1, l2 *ELNode) *proposer.Config {
 		TaikoL2Address:          env.Conf.L2.RollupAddress,
 		L1ProposerPrivKey:       env.Conf.L2.Proposer.PrivateKey,
 		L2SuggestedFeeRecipient: env.Conf.L2.SuggestedFeeRecipient.Address,
-		ProposeInterval:         env.Conf.L2.ProposeInterval,
+		ProposeInterval:         &env.Conf.L2.ProposeInterval,
 		ShufflePoolContent:      true,
 	}
 }

@@ -219,7 +219,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
 	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 	require.NoError(t, err)
-	return l1State.NextBlockID < l1State.LatestVerifiedID+env.L1Constants.MaxNumBlocks.Uint64()
+	return l1State.NextBlockID < l1State.LatestVerifiedID+env.TaikoConf.MaxNumBlocks.Uint64()
 }
 
 // proposeInvalidTxListBytes commits and proposes an invalid transaction list
@@ -238,7 +238,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	meta, commitTx, err := p.CommitTxList(
 		env.Context,
 		invalidTxListBytes,
-		uint64(rand.Int63n(env.L1Constants.BlockMaxGasLimit.Int64())),
+		uint64(rand.Int63n(env.TaikoConf.BlockMaxGasLimit.Int64())),
 		0,
 	)
 	require.NoError(t, err)

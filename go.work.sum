@@ -47,6 +47,8 @@ github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFP
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/ethereum/go-ethereum v1.10.4/go.mod h1:nEE0TP5MtxGzOMd7egIrbPJMQBnhVU3ELNxhBglIzhg=
 github.com/ethereum/go-ethereum v1.10.23/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/ethereum/go-ethereum v1.10.26 h1:i/7d9RBBwiXCEuyduBQzJw/mKmnvzsN14jqBmytw72s=
+github.com/ethereum/go-ethereum v1.10.26/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1/go.mod h1:G8XiiUErpj6++yb93r6y6T1nWBh4Bgoi3QFwUSbzt/U=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
@@ -135,6 +137,10 @@ github.com/taikochain/taiko-geth v0.0.0-20221129083453-a98101c3f5cd h1:Y6VGT7lRN
 github.com/taikochain/taiko-geth v0.0.0-20221129083453-a98101c3f5cd/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/taikochain/taiko-geth v0.0.0-20221209070159-3ebf84e5c70f h1:0ZcwaY5tSPsBQOgIBy8pNcDnQhs8J1wswVLM8GAmxk0=
 github.com/taikochain/taiko-geth v0.0.0-20221209070159-3ebf84e5c70f/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123 h1:+nHPC6b+WRwSouSqGwMbqGDJu353d9wnOUyUTNAHjNI=
+github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/taikoxyz/taiko-client v0.2.2 h1:EmIMG/gNM3gVnFInmZbD5PjNT+YKWWZ+aW7M4GfsWOc=
+github.com/taikoxyz/taiko-client v0.2.2/go.mod h1:xl1hsTIJMU+xrE/LC4MGoL6m2bPwKh3bnC5SeHAEWIs=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
 go.opencensus.io v0.20.1/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=

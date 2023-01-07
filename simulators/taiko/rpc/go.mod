@@ -3,11 +3,11 @@ module github.com/ethereum/hive/simulators/taiko/rpc
 go 1.18
 
 replace (
-	github.com/ethereum/go-ethereum v1.10.25 => github.com/taikochain/taiko-geth v0.0.0-20221209070159-3ebf84e5c70f
+	github.com/ethereum/go-ethereum v1.10.26 => github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123
 )
 
 require (
-	github.com/ethereum/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1
 	github.com/kr/pretty v0.3.0
 	github.com/stretchr/testify v1.8.0

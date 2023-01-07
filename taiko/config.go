@@ -20,11 +20,10 @@ var DefaultConfig = &Config{
 		ChainID:   big.NewInt(1336),
 		NetworkID: 31336,
 
-		Deployer:         deployAccount,
-		RollupAddress:    common.HexToAddress("0xa7dF1d30f6456Dc72cE18fE011896105651a1f86"),
-		BridgeAddress:    common.HexToAddress("0xAE4C9bD0f7AE5398Df05043079596E2BF0079CE9"),
-		VaultAddress:     common.HexToAddress("0x5E506e2E0EaD3Ff9d93859A5879cAA02582f77c3"),
-		TestERC20Address: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		Deployer:      deployAccount,
+		RollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
+		BridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
+		VaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
 
 		MineInterval: 0,
 	},
