@@ -74,20 +74,21 @@ type TestEnv struct {
 	lastCancel context.CancelFunc
 }
 
-func NewTestEnv(ctx context.Context, t *hivesim.T, c *Config) *TestEnv {
-	clientTypes, err := t.Sim.ClientTypes()
-	if err != nil {
-		t.Fatalf("failed to retrieve list of client types: %v", err)
-	}
-	clients := Roles(t, clientTypes)
+func NewTestEnv(ctx context.Context, t *hivesim.T) *TestEnv {
 	e := &TestEnv{
 		T:       t,
 		Context: ctx,
-		Conf:    c,
-		Clients: clients,
 	}
+	clientTypes, err := t.Sim.ClientTypes()
+	require.NoError(t, err, "failed to retrieve list of client types: %v", err)
+	e.Clients = Roles(t, clientTypes)
+
+	c := DefaultConfig()
+
 	e.L1Vault = NewVault(t, c.L1.ChainID)
 	e.L2Vault = NewVault(t, c.L2.ChainID)
+
+	e.Conf = c
 	return e
 }
 

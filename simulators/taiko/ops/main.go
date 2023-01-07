@@ -57,7 +57,7 @@ func main() {
 func firstL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
 
 	// generate the first L2 transaction
@@ -97,7 +97,7 @@ func firstVerifiedL2Block(env *taiko.TestEnv) func(*hivesim.T) {
 func syncL2Block(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
 
 	blockCnt := uint64(10)
@@ -196,7 +196,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t)
 	env.StartL1L2Driver(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
@@ -228,7 +228,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t)
 	env.StartL1L2(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
@@ -259,7 +259,7 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t, taiko.DefaultConfig)
+	env := taiko.NewTestEnv(ctx, t)
 	env.StartL1L2Driver(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)

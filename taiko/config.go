@@ -15,34 +15,36 @@ var (
 	proverAccount, _ = NewAccount("6bff9a8ffd7f94f43f4f5f642be8a3f32a94c1f316d90862884b2e276293b6ee")
 )
 
-var DefaultConfig = &Config{
-	L1: &L1Config{
-		ChainID:   big.NewInt(1336),
-		NetworkID: 31336,
+func DefaultConfig() *Config {
+	return &Config{
+		L1: &L1Config{
+			ChainID:   big.NewInt(1336),
+			NetworkID: 31336,
 
-		Deployer:      deployAccount,
-		RollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
-		BridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
-		VaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
+			Deployer:      deployAccount,
+			RollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
+			BridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
+			VaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
 
-		MineInterval: 0,
-	},
-	L2: &L2Config{
-		ChainID:   params.TaikoAlpha1NetworkID,
-		NetworkID: params.TaikoAlpha1NetworkID.Uint64(),
+			MineInterval: 0,
+		},
+		L2: &L2Config{
+			ChainID:   params.TaikoAlpha1NetworkID,
+			NetworkID: params.TaikoAlpha1NetworkID.Uint64(),
 
-		SuggestedFeeRecipient: deployAccount,
-		Proposer:              deployAccount,
-		Prover:                proverAccount,
-		RollupAddress:         common.HexToAddress("0x0000777700000000000000000000000000000001"),
-		BridgeAddress:         common.HexToAddress("0x0000777700000000000000000000000000000004"),
-		VaultAddress:          common.HexToAddress("0x0000777700000000000000000000000000000002"),
-		TestERC20Address:      common.HexToAddress("0x0000777700000000000000000000000000000005"),
-		Throwawayer:           deployAccount,
+			SuggestedFeeRecipient: deployAccount,
+			Proposer:              deployAccount,
+			Prover:                proverAccount,
+			RollupAddress:         common.HexToAddress("0x0000777700000000000000000000000000000001"),
+			BridgeAddress:         common.HexToAddress("0x0000777700000000000000000000000000000004"),
+			VaultAddress:          common.HexToAddress("0x0000777700000000000000000000000000000002"),
+			TestERC20Address:      common.HexToAddress("0x0000777700000000000000000000000000000005"),
+			Throwawayer:           deployAccount,
 
-		ProposeInterval: time.Second,
-		JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
-	},
+			ProposeInterval: time.Second,
+			JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",
+		},
+	}
 }
 
 type Account struct {
