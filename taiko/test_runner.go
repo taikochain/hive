@@ -66,7 +66,7 @@ type TestEnv struct {
 	L1Vault   *Vault
 	L2Vault   *Vault
 	Net       *Devnet
-	TaikoConf bindings.TaikoDataConfig
+	TaikoConf *bindings.TaikoDataConfig
 	// This holds most recent context created by the Ctx method.
 	// Every time Ctx is called, it creates a new context with the default
 	// timeout and cancels the previous one.
@@ -111,9 +111,9 @@ func (e *TestEnv) StartL1L2(l2Opts ...NodeOption) {
 	l1 := e.NewL1ELNode()
 	e.deployL1Contracts(l1, l2)
 	taikoL1 := l1.TaikoL1Client(e.T)
-	var err error
-	e.TaikoConf, err = taikoL1.GetConfig(nil)
+	c, err := taikoL1.GetConfig(nil)
 	require.NoError(e.T, err)
+	e.TaikoConf = &c
 	opts := []DevOption{
 		WithL2Node(l2),
 		WithL1Node(l1),

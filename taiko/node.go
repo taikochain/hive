@@ -43,7 +43,7 @@ func (e *TestEnv) NewL1ELNode(opts ...NodeOption) *ELNode {
 }
 
 // deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (e *TestEnv) deployL1Contracts(l1Node, l2 *ELNode) {
+func (e *TestEnv) deployL1Contracts(l1, l2 *ELNode) {
 	require.NotNil(e.T, e.Clients.Contract)
 	l2GenesisHash := e.GetBlockHashByNumber(l2, common.Big0, false)
 	opts := []NodeOption{
@@ -52,16 +52,20 @@ func (e *TestEnv) deployL1Contracts(l1Node, l2 *ELNode) {
 		WithL1DeployerAddress(e.Conf.L1.Deployer.Address),
 		WithL2GenesisBlockHash(l2GenesisHash),
 		WithL2ContractAddress(e.Conf.L2.RollupAddress),
-		WithMainnetUrl(l1Node.HttpRpcEndpoint()),
+		WithMainnetUrl(l1.HttpRpcEndpoint()),
 		WithL2ChainID(e.Conf.L2.ChainID),
 	}
+	e.T.Log("start deploy contracts on L1")
 	n := NewNode(e.T, e.Clients.Contract, opts...)
 	result, err := n.Exec("deploy.sh")
 	if err != nil || result.ExitCode != 0 {
-		e.T.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %v",
-			l1Node.Container, err, result)
+		e.T.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %+v",
+			l1.Container, err, result)
 	}
-	e.T.Logf("Deploy contracts on %s %s(%s)", l1Node.Type, l1Node.Container, l1Node.IP)
+	e.T.Logf("Deploy contracts on %s %s(%s)", l1.Type, l1.Container, l1.IP)
+	e.T.Log("Deploy result begin")
+	e.T.Log(result.Stdout)
+	e.T.Log("Deploy result end")
 }
 
 func (e *TestEnv) NewFullSyncL2ELNode(opts ...NodeOption) *ELNode {

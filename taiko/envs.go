@@ -49,7 +49,7 @@ const (
 	// deployer
 	envTaikoL1DeployerAddress  = "HIVE_TAIKO_L1_DEPLOYER_ADDRESS"
 	envTaikoL2GenesisBlockHash = "HIVE_TAIKO_L2_GENESIS_BLOCK_HASH"
-	envTaikoMainnetUrl         = "HIVE_TAIKO_MAINNET_URL" // TODO(alex): how does it works?
-	envTaikoPrivateKey         = "HIVE_TAIKO_PRIVATE_KEY" // TODO(alex): how does it works?
+	envTaikoMainnetUrl         = "HIVE_TAIKO_MAINNET_URL"
+	envTaikoPrivateKey         = "HIVE_TAIKO_PRIVATE_KEY"
 	envTaikoL2ChainID          = "HIVE_TAIKO_L2_CHAIN_ID"
 )

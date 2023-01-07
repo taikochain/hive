@@ -9,6 +9,8 @@ echo HIVE_TAIKO_PRIVATE_KEY: "$HIVE_TAIKO_PRIVATE_KEY"
 export MAINNET_URL="$HIVE_TAIKO_MAINNET_URL"
 export PRIVATE_KEY="$HIVE_TAIKO_PRIVATE_KEY"
 
+npx hardhat compile
+
 FLAGS="--network mainnet"
 FLAGS="$FLAGS --dao-vault $HIVE_TAIKO_L1_DEPLOYER_ADDRESS"
 FLAGS="$FLAGS --team-vault $HIVE_TAIKO_L1_DEPLOYER_ADDRESS"
@@ -19,4 +21,4 @@ FLAGS="$FLAGS --confirmations 1"
 
 echo "Deploy L1 rollup contacts with flags $FLAGS"
 
-K_COMMIT_DELAY_CONFIRMS=0 K_MAX_NUM_BLOCKS=50 K_INITIAL_UNCLE_DELAY=1 npx hardhat preprocess && npx hardhat compile && npx hardhat deploy_L1 $FLAGS
+LOG_LEVEL=debug npx hardhat deploy_L1 $FLAGS
