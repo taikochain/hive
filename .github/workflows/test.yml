@@ -1,0 +1,32 @@
+name: run taiko hive tests
+
+on:
+  push:
+    branches: [taiko]
+  repository_dispatch:
+    types: [start-taiko-test]
+  workflow_dispatch:
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: start hive test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: taikoxyz/hive
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Start test
+        run: |
+          echo ${{ github.event.client_payload.message }}
+          make test
