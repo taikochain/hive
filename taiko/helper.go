@@ -13,43 +13,44 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 )
 
-func (e *TestEnv) WaitELNodesUp(n *ELNode, timeout time.Duration) {
-	ctx, t := e.Context, e.T
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	if _, err := n.EthClient(t).ChainID(ctx); err != nil {
-		t.Fatalf("%s should be up within %v,err=%v", n.Type, timeout, err)
+func WaitHeight(ctx context.Context, n *ELNode, f func(uint64) bool) error {
+	client, err := n.EthClient()
+	if err != nil {
+		return err
 	}
-}
-
-func (e *TestEnv) WaitHeight(n *ELNode, f func(uint64) bool) {
-	ctx, t := e.Context, e.T
-	client := n.EthClient(t)
 	for {
 		height, err := client.BlockNumber(ctx)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		if f(height) {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
 		continue
 	}
+	return nil
 }
 
-func (e *TestEnv) GetBlockHashByNumber(n *ELNode, num *big.Int, needWait bool) common.Hash {
-	ctx, t := e.Context, e.T
+func GetBlockHashByNumber(ctx context.Context, n *ELNode, num *big.Int, needWait bool) (common.Hash, error) {
 	if needWait {
-		e.WaitHeight(n, GreaterEqual(num.Uint64()))
+		if err := WaitHeight(ctx, n, GreaterEqual(num.Uint64())); err != nil {
+			return common.Hash{}, err
+		}
 	}
-	cli := n.EthClient(t)
+	cli, err := n.EthClient()
+	if err != nil {
+		return common.Hash{}, err
+	}
 	block, err := cli.BlockByNumber(ctx, num)
-	require.NoError(t, err)
-	return block.Hash()
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return block.Hash(), nil
 }
 
 func WaitReceiptOK(ctx context.Context, cli *ethclient.Client, hash common.Hash) (*types.Receipt, error) {
@@ -83,81 +84,97 @@ func WaitReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash
 	}
 }
 
-func (e *TestEnv) SubscribeHeight(n *ELNode, f func(*big.Int) bool) {
-	ctx, t := e.Context, e.T
+func SubscribeHeight(ctx context.Context, n *ELNode, f func(*big.Int) bool) error {
 	ch := make(chan *types.Header)
-	cli := n.EthClient(t)
+	cli, err := n.EthClient()
+	if err != nil {
+		return err
+	}
 	sub, err := cli.SubscribeNewHead(ctx, ch)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	defer sub.Unsubscribe()
 
 	for {
 		select {
 		case h := <-ch:
 			if f(h.Number) {
-				return
+				return nil
 			}
 		case err := <-sub.Err():
-			require.NoError(t, err)
+			return err
 		case <-ctx.Done():
-			t.Fatalf("program close before test finish")
+			return fmt.Errorf("program close before test finish")
 		}
 	}
 }
 
-func (e *TestEnv) WaitProveEvent(n *ELNode, hash common.Hash) {
-	ctx, t := e.Context, e.T
+func WaitProveEvent(ctx context.Context, n *ELNode, hash common.Hash) error {
 	start := uint64(0)
 	opt := &bind.WatchOpts{Start: &start, Context: ctx}
 	eventCh := make(chan *bindings.TaikoL1ClientBlockProven)
-	taikoL1 := n.TaikoL1Client(t)
+	taikoL1, err := n.TaikoL1Client()
+	if err != nil {
+		return err
+	}
 	sub, err := taikoL1.WatchBlockProven(opt, eventCh, nil)
 	defer sub.Unsubscribe()
 	if err != nil {
-		t.Fatal("Failed to watch prove event", err)
+		return err
 	}
 	for {
 		select {
 		case err := <-sub.Err():
-			t.Fatal("Failed to watch prove event", err)
+			return err
 		case e := <-eventCh:
 			if e.BlockHash == hash {
-				return
+				return nil
 			}
 		case <-ctx.Done():
-			t.Log("test is finished before watch proved event")
-			return
+			return fmt.Errorf("test is finished before watch proved event")
 		}
 	}
 }
 
-func (e *TestEnv) WaitStateChange(n *ELNode, f func(*bindings.ProtocolStateVariables) bool) {
-	t := e.T
-	taikoL1 := n.TaikoL1Client(t)
+func WaitStateChange(n *ELNode, f func(*bindings.ProtocolStateVariables) bool) error {
+	taikoL1, err := n.TaikoL1Client()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < 60; i++ {
 		s, err := rpc.GetProtocolStateVariables(taikoL1, nil)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		if f(s) {
-			break
+			return nil
 		}
 		time.Sleep(500 * time.Millisecond)
 		continue
 	}
+	return nil
 }
 
-func (e *TestEnv) GenSomeBlocks(n *ELNode, v *Vault, cnt uint64) {
-	ctx, t := e.Context, e.T
-	cli := n.EthClient(t)
+func GenSomeBlocks(ctx context.Context, n *ELNode, v *Vault, cnt uint64) error {
+	cli, err := n.EthClient()
+	if err != nil {
+		return err
+	}
 	curr, err := cli.BlockNumber(ctx)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	end := curr + cnt
 	for curr < end {
 		v.CreateAccount(ctx, cli, big.NewInt(params.GWei))
 		curr, err = cli.BlockNumber(ctx)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Logf("generate %d L2 blocks", cnt)
+	return nil
 }
 
 func GreaterEqual(want uint64) func(uint64) bool {

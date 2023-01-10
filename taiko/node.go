@@ -1,8 +1,6 @@
 package taiko
 
 import (
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/stretchr/testify/require"
@@ -10,14 +8,21 @@ import (
 
 type Node struct {
 	*hivesim.Client
-	role      string
-	opts      []hivesim.StartOption
-	TaikoAddr common.Address
+	role string
+	opts []hivesim.StartOption
+}
+
+type deployResult struct {
+	rollupAddress    common.Address
+	bridgeAddress    common.Address
+	vaultAddress     common.Address
+	testERC20Address common.Address
 }
 
 type NodeOption func(*Node)
 
 func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Node {
+	require.NotNil(t, c)
 	n := new(Node)
 	for _, o := range opts {
 		o(n)
@@ -27,45 +32,61 @@ func NewNode(t *hivesim.T, c *hivesim.ClientDefinition, opts ...NodeOption) *Nod
 }
 
 // NewL1ELNode starts a eth1 image and add it to the network
-func (e *TestEnv) NewL1ELNode(opts ...NodeOption) *ELNode {
-	require.NotNil(e.T, e.Clients.L1)
+func (e *TestEnv) NewL1ELNode(l2 *ELNode, opts ...NodeOption) *ELNode {
+	t, c, def := e.T, e.Conf, e.Clients.L1
 	opts = append(opts,
 		WithRole("L1Engine"),
-		WithL1ChainID(e.Conf.L1.ChainID),
-		WithNetworkID(e.Conf.L1.NetworkID),
-		WithCliquePeriod(e.Conf.L1.MineInterval),
+		WithL1ChainID(c.L1.ChainID),
+		WithNetworkID(c.L1.NetworkID),
+		WithCliquePeriod(c.L1.MineInterval),
 	)
-	n := NewNode(e.T, e.Clients.L1, opts...)
-	n.TaikoAddr = e.Conf.L1.RollupAddress
-	elNode := (*ELNode)(n)
-	e.WaitELNodesUp(elNode, 10*time.Second)
-	return elNode
+	n := NewNode(t, def, opts...)
+	l1 := &ELNode{Node: n}
+	l1.deploy = getL1Deployments()
+	e.deployL1Contracts(l1, l2)
+	return l1
 }
 
 // deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
 func (e *TestEnv) deployL1Contracts(l1, l2 *ELNode) {
-	require.NotNil(e.T, e.Clients.Contract)
-	l2GenesisHash := e.GetBlockHashByNumber(l2, common.Big0, false)
+	t, c, def := e.T, e.Conf, e.Clients.Contract
 	opts := []NodeOption{
 		WithNoCheck(),
-		WithPrivateKey(e.Conf.L1.Deployer.PrivateKeyHex),
-		WithL1DeployerAddress(e.Conf.L1.Deployer.Address),
-		WithL2GenesisBlockHash(l2GenesisHash),
-		WithL2ContractAddress(e.Conf.L2.RollupAddress),
+		WithPrivateKey(c.L1.Deployer.PrivateKeyHex),
+		WithL1DeployerAddress(c.L1.Deployer.Address),
+		WithL2GenesisBlockHash(l2.genesisHash),
+		WithL2ContractAddress(l2.deploy.rollupAddress),
 		WithMainnetUrl(l1.HttpRpcEndpoint()),
-		WithL2ChainID(e.Conf.L2.ChainID),
+		WithL2ChainID(c.L2.ChainID),
 	}
-	e.T.Log("start deploy contracts on L1")
-	n := NewNode(e.T, e.Clients.Contract, opts...)
+	t.Log("start deploy contracts on L1")
+	n := NewNode(t, def, opts...)
 	result, err := n.Exec("deploy.sh")
 	if err != nil || result.ExitCode != 0 {
-		e.T.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %+v",
+		t.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %+v",
 			l1.Container, err, result)
 	}
-	e.T.Logf("Deploy contracts on %s %s(%s)", l1.Type, l1.Container, l1.IP)
-	e.T.Log("Deploy result begin")
-	e.T.Log(result.Stdout)
-	e.T.Log("Deploy result end")
+	t.Logf("Deploy contracts on %s %s(%s)", l1.Type, l1.Container, l1.IP)
+	t.Log("Deploy result begin")
+	t.Log(result.Stdout)
+	t.Log("Deploy result end")
+}
+
+func getL1Deployments() *deployResult {
+	return &deployResult{
+		rollupAddress: common.HexToAddress("0x9b557777Be33A8A2fE6aF93E017A0d139B439E5D"),
+		bridgeAddress: common.HexToAddress("0xB12d6112D64B213880Fa53F815aF1F29c91CaCe9"),
+		vaultAddress:  common.HexToAddress("0xDA1Ea1362475997419D2055dD43390AEE34c6c37"),
+	}
+}
+
+func getL2Deployments() *deployResult {
+	return &deployResult{
+		rollupAddress:    common.HexToAddress("0x0000777700000000000000000000000000000001"),
+		bridgeAddress:    common.HexToAddress("0x0000777700000000000000000000000000000004"),
+		vaultAddress:     common.HexToAddress("0x0000777700000000000000000000000000000002"),
+		testERC20Address: common.HexToAddress("0x0000777700000000000000000000000000000005"),
+	}
 }
 
 func (e *TestEnv) NewFullSyncL2ELNode(opts ...NodeOption) *ELNode {
@@ -74,66 +95,65 @@ func (e *TestEnv) NewFullSyncL2ELNode(opts ...NodeOption) *ELNode {
 }
 
 func (e *TestEnv) NewL2ELNode(opts ...NodeOption) *ELNode {
-	require.NotNil(e.T, e.Clients.L2)
+	t, ctx, c, def := e.T, e.Context, e.Conf, e.Clients.L2
 	opts = append(opts,
 		WithRole("L2Engine"),
-		WithJWTSecret(e.Conf.L2.JWTSecret),
-		WithNetworkID(e.Conf.L2.NetworkID),
+		WithJWTSecret(c.L2.JWTSecret),
+		WithNetworkID(c.L2.NetworkID),
 		WithLogLevel("3"),
 	)
-	n := NewNode(e.T, e.Clients.L2, opts...)
-	n.TaikoAddr = e.Conf.L2.RollupAddress
-	elNode := (*ELNode)(n)
-	e.WaitELNodesUp(elNode, 10*time.Second)
-	return elNode
+	n := NewNode(t, def, opts...)
+	l2 := &ELNode{Node: n}
+	l2.deploy = getL2Deployments()
+	g, err := GetBlockHashByNumber(ctx, l2, common.Big0, false)
+	require.NoError(t, err)
+	l2.genesisHash = g
+	return l2
 }
 
 func (e *TestEnv) NewDriverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(e.T, e.Clients.Driver)
+	t, c, def := e.T, e.Conf, e.Clients.Driver
 	opts = append(opts,
 		WithRole("driver"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
 		WithL2EngineEndpoint(l2.EngineEndpoint()),
-		WithL1ContractAddress(e.Conf.L1.RollupAddress),
-		WithL2ContractAddress(e.Conf.L2.RollupAddress),
-		WithThrowawayBlockBuilderPrivateKey(e.Conf.L2.Throwawayer.PrivateKeyHex),
-		WithJWTSecret(e.Conf.L2.JWTSecret),
+		WithL1ContractAddress(l1.deploy.rollupAddress),
+		WithL2ContractAddress(l2.deploy.rollupAddress),
+		WithThrowawayBlockBuilderPrivateKey(c.L2.Throwawayer.PrivateKeyHex),
+		WithJWTSecret(c.L2.JWTSecret),
 	)
-	n := NewNode(e.T, e.Clients.Driver, opts...)
+	n := NewNode(t, def, opts...)
 	return n
 }
 
 func (e *TestEnv) NewProposerNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(e.T, e.Clients.Proposer)
+	t, c, def := e.T, e.Conf, e.Clients.Proposer
 	opts = append(opts,
 		WithRole("proposer"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
-		WithL1ContractAddress(e.Conf.L1.RollupAddress),
-		WithL2ContractAddress(e.Conf.L2.RollupAddress),
-		WithProposerPrivateKey(e.Conf.L2.Proposer.PrivateKeyHex),
-		WithSuggestedFeeRecipient(e.Conf.L2.SuggestedFeeRecipient.Address),
-		WithProposeInterval(e.Conf.L2.ProposeInterval),
+		WithL1ContractAddress(l1.deploy.rollupAddress),
+		WithL2ContractAddress(l2.deploy.rollupAddress),
+		WithProposerPrivateKey(c.L2.Proposer.PrivateKeyHex),
+		WithSuggestedFeeRecipient(c.L2.SuggestedFeeRecipient.Address),
+		WithProposeInterval(c.L2.ProposeInterval),
 	)
-	if e.Conf.L2.ProduceInvalidBlocksInterval != 0 {
-		opts = append(opts, WithProduceInvalidBlocksInterval(e.Conf.L2.ProduceInvalidBlocksInterval))
-	}
-	return NewNode(e.T, e.Clients.Proposer, opts...)
+	return NewNode(t, def, opts...)
 }
 
 func (e *TestEnv) NewProverNode(l1, l2 *ELNode, opts ...NodeOption) *Node {
-	require.NotNil(e.T, e.Clients.Prover)
+	t, c, def := e.T, e.Conf, e.Clients.Prover
 	opts = append(opts,
 		WithRole("prover"),
 		WithNoCheck(),
 		WithL1Endpoint(l1.WsRpcEndpoint()),
 		WithL2Endpoint(l2.WsRpcEndpoint()),
-		WithL1ContractAddress(e.Conf.L1.RollupAddress),
-		WithL2ContractAddress(e.Conf.L2.RollupAddress),
-		WithProverPrivateKey(e.Conf.L2.Prover.PrivateKeyHex),
+		WithL1ContractAddress(l1.deploy.rollupAddress),
+		WithL2ContractAddress(l2.deploy.rollupAddress),
+		WithProverPrivateKey(c.L2.Prover.PrivateKeyHex),
 	)
-	return NewNode(e.T, e.Clients.Prover, opts...)
+	return NewNode(t, def, opts...)
 }
