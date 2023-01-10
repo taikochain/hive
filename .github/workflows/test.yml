@@ -15,18 +15,7 @@ concurrency:
 jobs:
   test:
     name: start hive test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: taikoxyz/hive
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-
       - name: Start test
-        run: |
-          echo ${{ github.event.client_payload.message }}
-          make test
+        run: cd /mnt/disks/data/go/src/github.com/taikoxyz/hive && git checkout taiko && git pull origin taiko && make test
