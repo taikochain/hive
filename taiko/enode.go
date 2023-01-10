@@ -2,10 +2,12 @@ package taiko
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
+	"github.com/ethereum/hive/hivesim"
 	"github.com/taikoxyz/taiko-client/bindings"
 )
 
@@ -80,4 +82,21 @@ func (e *ELNode) TaikoL2Client() (*bindings.TaikoL2Client, error) {
 
 func (e *ELNode) GethClient() *gethclient.Client {
 	return gethclient.New(e.RPC())
+}
+
+func (e *ELNode) getL2Deployments(t *hivesim.T) *deployResult {
+	query := func(key string) common.Address {
+		result, err := e.Exec("deploy_result.sh", key)
+		if err != nil || result.ExitCode != 0 {
+			t.Fatalf("failed to get deploy result on L2 engine node %s, error: %v, result: %+v",
+				e.Container, err, result)
+		}
+		return common.HexToAddress(strings.TrimSpace(result.Stdout))
+	}
+	return &deployResult{
+		rollupAddress:    query("TaikoL2"),
+		bridgeAddress:    query("Bridge"),
+		vaultAddress:     query("TokenVault"),
+		testERC20Address: query("TestERC20"),
+	}
 }
