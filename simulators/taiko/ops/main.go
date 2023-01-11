@@ -295,9 +295,9 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 		return false
 	}))
 	l2Eth, err := l2.EthClient()
-	require.Error(t, err)
+	require.NoError(t, err)
 	pendingNonce, err := l2Eth.PendingNonceAt(context.Background(), env.Conf.L2.Proposer.Address)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotEqual(t, invalidTx.Nonce(), pendingNonce)
 }
 
