@@ -32,14 +32,6 @@ func WithNetworkID(id uint64) NodeOption {
 	}
 }
 
-func WithLogLevel(level string) NodeOption {
-	return func(n *Node) {
-		n.opts = append(n.opts, hivesim.Params{
-			envLogLevel: level,
-		})
-	}
-}
-
 func WithBootNode(nodes string) NodeOption {
 	return func(n *Node) {
 		n.opts = append(n.opts, hivesim.Params{
