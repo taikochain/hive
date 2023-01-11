@@ -254,8 +254,8 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	require.NoError(t, err)
 	env.GenCommitDelayBlocks(t)
 	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
-	require.Error(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
-	require.Error(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
+	require.Nil(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
+	require.Nil(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
@@ -287,8 +287,8 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 
 	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
 
-	require.Error(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
-	require.Error(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
+	require.Nil(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
+	require.Nil(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
@@ -309,7 +309,7 @@ func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
 	require.NoError(t, err)
 	l2 := env.Net.GetL2ELNode(0)
 	l2Eth, err := l2.EthClient()
-	require.Error(t, err)
+	require.NoError(t, err)
 	nonce, err := l2Eth.PendingNonceAt(env.Context, env.Conf.L2.Proposer.Address)
 	require.NoError(t, err)
 
@@ -318,7 +318,7 @@ func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
 	opts.Nonce = new(big.Int).SetUint64(nonce + 1024)
 
 	taikoL2, err := l2.TaikoL2Client()
-	require.Error(t, err)
+	require.NoError(t, err)
 	tx, err := taikoL2.Anchor(opts, common.Big0, common.BytesToHash(testutils.RandomBytes(32)))
 	require.NoError(t, err)
 	return tx
