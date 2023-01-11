@@ -88,7 +88,7 @@ case $HIVE_TAIKO_ROLE in
   FLAGS="$FLAGS --l2.throwawayBlockBuilderPrivKey=$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
   FLAGS="$FLAGS --jwtSecret /jwtsecret"
   if [ "$HIVE_TAIKO_ENABLE_L2_P2P" != "" ]; then
-    FLAGS="$FLAGS --p2p.syncVerifiedBlocks "
+    FLAGS="$FLAGS --p2p.syncVerifiedBlocks"
   fi
   ;;
 "prover")

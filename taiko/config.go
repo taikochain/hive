@@ -8,18 +8,21 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/taikoxyz/taiko-client/bindings"
 )
 
 var (
-	deployAccount, _ = NewAccount("2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200")
-	proverAccount, _ = NewAccount("6bff9a8ffd7f94f43f4f5f642be8a3f32a94c1f316d90862884b2e276293b6ee")
+	l1NetworkID         = uint64(31336)
+	deployAccount, _    = NewAccount("2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200")
+	proverAccount, _    = NewAccount("6bff9a8ffd7f94f43f4f5f642be8a3f32a94c1f316d90862884b2e276293b6ee")
+	throwawayAccount, _ = NewAccount(bindings.GoldenTouchPrivKey[2:])
 )
 
 func DefaultConfig() *Config {
 	return &Config{
 		L1: &L1Config{
-			ChainID:   big.NewInt(1336),
-			NetworkID: 31336,
+			ChainID:   big.NewInt(int64(l1NetworkID)),
+			NetworkID: l1NetworkID,
 
 			Deployer:     deployAccount,
 			MineInterval: 0,
@@ -28,11 +31,10 @@ func DefaultConfig() *Config {
 			ChainID:   params.TaikoAlpha1NetworkID,
 			NetworkID: params.TaikoAlpha1NetworkID.Uint64(),
 
-			SuggestedFeeRecipient: deployAccount,
 			Proposer:              deployAccount,
+			SuggestedFeeRecipient: deployAccount,
 			Prover:                proverAccount,
-
-			Throwawayer: deployAccount,
+			Throwawayer:           throwawayAccount,
 
 			ProposeInterval: time.Second,
 			JWTSecret:       "c49690b5a9bc72c7b451b48c5fee2b542e66559d840a133d090769abc56e39e7",

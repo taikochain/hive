@@ -1,7 +1,7 @@
 HIVEFLAGS=--client=taiko-l1,taiko-geth,taiko-protocol,taiko-client
 HIVEFLAGS+=--loglevel 4
 HIVEFLAGS+=--docker.output
-
+HIVEFLAGS+=--docker.nocache taiko
 build:
 	@go build . && go build -o hiveview cmd/hiveview/*.go
 
@@ -18,7 +18,7 @@ testrpc: build
 
 test:
 	@echo "$(shell date '+%c') Starting taiko simulation"
-	# ./hive --sim=taiko ${HIVEFLAGS}
+	./hive --sim=taiko ${HIVEFLAGS}
 
 .PHONY: build \
 		clean \
