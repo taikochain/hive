@@ -20,35 +20,43 @@ import (
 	"github.com/taikoxyz/taiko-client/testutils"
 )
 
+var tests = []*hivesim.TestSpec{
+	{
+		Name:        "firstL2Block",
+		Description: "Relevant tests for the generation of the first L2 block",
+		Run:         firstL2Block,
+	},
+	{
+		Name:        "sync test",
+		Description: "L2 block synchronization related tests",
+		Run:         syncL2Block,
+	},
+	{
+		Name:        "tooManyPendingBlocks",
+		Description: "Too many pending blocks will block further proposes",
+		Run:         tooManyPendingBlocks,
+	},
+	{
+		Name:        "proposeInvalidTxListBytes",
+		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
+		Run:         proposeInvalidTxListBytes,
+	},
+	{
+		Name:        "proposeTxListIncludingInvalidTx",
+		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
+		Run:         proposeTxListIncludingInvalidTx,
+	},
+}
+
 func main() {
 	suit := hivesim.Suite{
 		Name:        "taiko ops",
 		Description: "Test propose, sync and other things",
 	}
 	suit.Add(&hivesim.TestSpec{
-		Name:        "firstL2Block",
-		Description: "Relevant tests for the generation of the first L2 block",
-		Run:         firstL2Block,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "sync test",
-		Description: "L2 block synchronization related tests",
-		Run:         syncL2Block,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "tooManyPendingBlocks",
-		Description: "Too many pending blocks will block further proposes",
-		Run:         tooManyPendingBlocks,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "proposeInvalidTxListBytes",
-		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
-		Run:         proposeInvalidTxListBytes,
-	})
-	suit.Add(&hivesim.TestSpec{
-		Name:        "proposeTxListIncludingInvalidTx",
-		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
-		Run:         proposeTxListIncludingInvalidTx,
+		Name:        "client test",
+		Description: "",
+		Run:         func(t *hivesim.T) { runAllTests(t) },
 	})
 	sim := hivesim.New()
 	hivesim.MustRun(sim, suit)
@@ -322,4 +330,15 @@ func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
 	tx, err := taikoL2.Anchor(opts, common.Big0, common.BytesToHash(testutils.RandomBytes(32)))
 	require.NoError(t, err)
 	return tx
+}
+
+// runAllTests runs the tests against a client instance.
+// Most tests simply wait for tx inclusion in a block so we can run many tests concurrently.
+func runAllTests(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	taiko.RunTests(t, ctx, &taiko.RunTestsParams{
+		Tests:       tests,
+		Concurrency: 40,
+	})
 }
