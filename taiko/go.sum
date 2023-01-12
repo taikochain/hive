@@ -169,10 +169,10 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a h1:1ur3QoCqvE5fl+nylMaIr9PVV1w343YRDtsy+Rwu7XI=
 github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a/go.mod h1:RRCYJbIwD5jmqPI9XoAFR0OcDxqUctll6zUj/+B4S48=
-github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123 h1:+nHPC6b+WRwSouSqGwMbqGDJu353d9wnOUyUTNAHjNI=
-github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/taikoxyz/taiko-client v0.2.2 h1:EmIMG/gNM3gVnFInmZbD5PjNT+YKWWZ+aW7M4GfsWOc=
 github.com/taikoxyz/taiko-client v0.2.2/go.mod h1:xl1hsTIJMU+xrE/LC4MGoL6m2bPwKh3bnC5SeHAEWIs=
+github.com/taikoxyz/taiko-geth v0.0.0-20221223061332-67c60b50b123 h1:HC4PMDVEhokH2Qo6Uz1CLVJ1cvVvHxcuHbJJ6hSHzyc=
+github.com/taikoxyz/taiko-geth v0.0.0-20221223061332-67c60b50b123/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e h1:cR8/SYRgyQCt5cNCMniB/ZScMkhI9nk8U5C7SbISXjo=
 github.com/tklauser/go-sysconf v0.3.10 h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=
 github.com/tklauser/go-sysconf v0.3.10/go.mod h1:C8XykCvCb+Gn0oNCWPIlcb0RuglQTYaQ2hGm7jmxEFk=

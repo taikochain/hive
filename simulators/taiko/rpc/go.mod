@@ -2,9 +2,7 @@ module github.com/ethereum/hive/simulators/taiko/rpc
 
 go 1.18
 
-replace (
-	github.com/ethereum/go-ethereum v1.10.26 => github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123
-)
+replace github.com/ethereum/go-ethereum v1.10.26 => github.com/taikoxyz/taiko-geth v0.0.0-20221223061332-67c60b50b123
 
 require (
 	github.com/ethereum/go-ethereum v1.10.26
@@ -15,7 +13,10 @@ require (
 
 require (
 	github.com/VictoriaMetrics/fastcache v1.10.0 // indirect
+	github.com/btcsuite/btcd v0.23.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.3 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
