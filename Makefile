@@ -16,7 +16,7 @@ testrpc: build
 	@echo "$(shell date) Starting taiko/rpc simulation"
 	./hive --sim=taiko/rpc ${HIVEFLAGS}
 
-test:
+test: build
 	@echo "$(shell date '+%c') Starting taiko simulation"
 	# ./hive --sim=taiko ${HIVEFLAGS}
 
