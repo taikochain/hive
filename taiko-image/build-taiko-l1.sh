@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -e
+
 workdir=$(
     cd $(dirname $0)
     pwd
@@ -21,7 +24,7 @@ startL1Container() {
             -e HIVE_TAIKO_L1_CHAIN_ID=${L1_CHAIN_ID} \
             -e HIVE_CLIQUE_PERIOD=${L1_CLIQUE_PERIOD} \
             -v ${workdir}/genesis.json:/tmp/genesis.json \
-            -v ${workdir}/start.sh:/start.sh \
+            -v ${workdir}/start-l1.sh:/start.sh \
             -p 18545:8545 \
             --entrypoint "/start.sh" \
             ethereum/client-go:latest
@@ -48,7 +51,6 @@ wait() {
         -H "Content-Type: application/json" \
         -d '{"jsonrpc":"2.0","id":0,"method":"eth_chainId","params":[]}' \
         localhost:28545 >/dev/null; do
-        echo "wait"
         sleep 1
     done
 }
@@ -59,6 +61,7 @@ getL2GenesisBlockHash() {
     cd ${workdir}/../clients/taiko-geth && docker build -t ${image_name} . && cd -
     docker run \
         -d \
+        -e HIVE_NETWORK_ID=${HIVE_TAIKO_L2_CHAIN_ID} \
         -e HIVE_TAIKO_JWT_SECRET=$(jq -r .jwt_secret ${workdir}/../taiko/config.json) \
         -p 28545:8545 \
         --name ${L2ContainerName} \

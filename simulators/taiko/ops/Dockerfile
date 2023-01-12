@@ -21,6 +21,7 @@ RUN go build -v .
 # Build the simulator run container.
 FROM alpine:latest
 
+COPY --from=builder /source/taiko/config.json .
 COPY --from=builder /source/ops/ops .
 
 ENTRYPOINT ["./ops"]

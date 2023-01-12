@@ -1,4 +1,4 @@
-HIVEFLAGS=--client=taiko-l1,taiko-geth,taiko-protocol,taiko-client
+HIVEFLAGS=--client=taiko-l1,taiko-geth,taiko-client
 HIVEFLAGS+=--loglevel 4
 HIVEFLAGS+=--docker.output
 HIVEFLAGS+=--docker.nocache taiko

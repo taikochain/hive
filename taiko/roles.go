@@ -63,10 +63,12 @@ func NewProposerConfig(env *TestEnv, l1, l2 *ELNode) *proposer.Config {
 	}
 }
 
-func NewProposer(t *hivesim.T, env *TestEnv, c *proposer.Config) *proposer.Proposer {
+func NewProposer(t *hivesim.T, env *TestEnv, c *proposer.Config) (*proposer.Proposer, error) {
 	p := new(proposer.Proposer)
-	proposer.InitFromConfig(env.Context, p, c)
-	return p
+	if err := proposer.InitFromConfig(env.Context, p, c); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func NewProverConfig(env *TestEnv) *prover.Config {
@@ -75,8 +77,10 @@ func NewProverConfig(env *TestEnv) *prover.Config {
 	}
 }
 
-func NewProver(t *hivesim.T, env *TestEnv, c *prover.Config) *prover.Prover {
+func NewProver(t *hivesim.T, env *TestEnv, c *prover.Config) (*prover.Prover, error) {
 	p := new(prover.Prover)
-	prover.InitFromConfig(env.Context, p, c)
-	return p
+	if err := prover.InitFromConfig(env.Context, p, c); err != nil {
+		return nil, err
+	}
+	return p, nil
 }

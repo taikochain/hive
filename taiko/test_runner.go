@@ -72,7 +72,8 @@ func NewTestEnv(ctx context.Context, t *hivesim.T) *TestEnv {
 	require.NoError(t, err, "failed to retrieve list of client types: %v", err)
 	e.Clients = Roles(t, clientTypes)
 
-	c := DefaultConfig()
+	c, err := DefaultConfig()
+	require.NoError(t, err)
 
 	e.L1Vault = NewVault(t, c.L1.ChainID)
 	e.L2Vault = NewVault(t, c.L2.ChainID)
