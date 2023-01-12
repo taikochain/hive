@@ -16,7 +16,7 @@ library LibSharedConfig {
     function getConfig() internal pure returns (TaikoData.Config memory) {
         return
             TaikoData.Config({
-                chainId: 167,
+                chainId: 167001, // for hive test, should be consistent with DefaultConfig().L2.ChainID in "taiko/config.go"
                 maxNumBlocks: 30, // up to 2048 pending blocks, change for hive test
                 blockHashHistory: 100000,
                 // This number is calculated from maxNumBlocks to make

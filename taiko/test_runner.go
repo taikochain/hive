@@ -51,12 +51,6 @@ func (rt *LoggingRoundTrip) RoundTrip(req *http.Request) (*http.Response, error)
 	return &respCopy, nil
 }
 
-type TestSpec struct {
-	Name        string
-	Description string
-	Run         func(t *hivesim.T, env *TestEnv)
-}
-
 // TestEnv is the environment of a single test.
 type TestEnv struct {
 	T         *hivesim.T
@@ -67,11 +61,6 @@ type TestEnv struct {
 	L2Vault   *Vault
 	Net       *Devnet
 	TaikoConf *bindings.TaikoDataConfig
-	// This holds most recent context created by the Ctx method.
-	// Every time Ctx is called, it creates a new context with the default
-	// timeout and cancels the previous one.
-	lastCtx    context.Context
-	lastCancel context.CancelFunc
 }
 
 func NewTestEnv(ctx context.Context, t *hivesim.T) *TestEnv {
@@ -99,6 +88,28 @@ func (e *TestEnv) StartSingleNodeNet() {
 		WithProverNode(e.NewProverNode(l1, l2)),
 		WithProposerNode(e.NewProposerNode(l1, l2)),
 	)
+}
+
+func (e *TestEnv) StopSingleNodeNet() {
+	t := e.T
+	for _, n := range e.Net.drivers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.proposers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.provers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.drivers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.L1Engines {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.L2Engines {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
 }
 
 func (e *TestEnv) StartL1L2Driver(l2Opts ...NodeOption) {
@@ -149,47 +160,22 @@ func (e *TestEnv) GenSomeL2Blocks(t *hivesim.T, cnt uint64) {
 	t.Logf("generate %d L2 blocks", cnt)
 }
 
-// Ctx returns a context with the default timeout.
-// For subsequent calls to Ctx, it also cancels the previous context.
-func (t *TestEnv) Ctx() context.Context {
-	return t.TimeoutCtx(RPCTimeout)
-}
-
-func (t *TestEnv) TimeoutCtx(timeout time.Duration) context.Context {
-	if t.lastCtx != nil {
-		t.lastCancel()
-	}
-	t.lastCtx, t.lastCancel = context.WithTimeout(t.Context, timeout)
-	return t.lastCtx
-}
-
 type RunTestsParams struct {
 	Devnet      *Devnet
-	Tests       []*TestSpec
+	Tests       []*hivesim.TestSpec
 	Concurrency int64
 }
 
-func RunTests(env *TestEnv, params *RunTestsParams) {
+func RunTests(t *hivesim.T, ctx context.Context, params *RunTestsParams) {
 	s := semaphore.NewWeighted(params.Concurrency)
 	var done int
 	doneCh := make(chan struct{})
 
-	t, ctx := env.T, env.Context
-
 	for _, test := range params.Tests {
-		go func(test *TestSpec) {
+		go func(test *hivesim.TestSpec) {
 			require.NoError(t, s.Acquire(ctx, 1))
 			defer s.Release(1)
-			t.Run(hivesim.TestSpec{
-				Name:        test.Name,
-				Description: test.Description,
-				Run: func(t *hivesim.T) {
-					test.Run(t, env)
-					if env.lastCtx != nil {
-						env.lastCancel()
-					}
-				},
-			})
+			t.Run(*test)
 			doneCh <- struct{}{}
 		}(test)
 	}

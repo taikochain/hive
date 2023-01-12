@@ -101,7 +101,6 @@ func (e *TestEnv) NewL2ELNode(opts ...NodeOption) *ELNode {
 		WithRole("L2Engine"),
 		WithJWTSecret(c.L2.JWTSecret),
 		WithNetworkID(c.L2.NetworkID),
-		WithLogLevel("3"),
 	)
 	n := NewNode(t, def, opts...)
 	l2 := &ELNode{Node: n}

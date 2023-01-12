@@ -79,7 +79,7 @@ set -e
 
 FLAGS="--l1.ws $HIVE_TAIKO_L1_RPC_ENDPOINT --l2.ws $HIVE_TAIKO_L2_RPC_ENDPOINT"
 FLAGS="$FLAGS --taikoL1 $HIVE_TAIKO_L1_ROLLUP_ADDRESS  --taikoL2 $HIVE_TAIKO_L2_ROLLUP_ADDRESS"
-# FLAGS="$FLAGS --verbosity 4"
+FLAGS="$FLAGS --verbosity $HIVE_LOGLEVEL"
 
 case $HIVE_TAIKO_ROLE in
 "driver")
@@ -88,22 +88,19 @@ case $HIVE_TAIKO_ROLE in
   FLAGS="$FLAGS --l2.throwawayBlockBuilderPrivKey=$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
   FLAGS="$FLAGS --jwtSecret /jwtsecret"
   if [ "$HIVE_TAIKO_ENABLE_L2_P2P" != "" ]; then
-    FLAGS="$FLAGS --p2p.syncVerifiedBlocks "
+    FLAGS="$FLAGS --p2p.syncVerifiedBlocks"
   fi
-  FLAGS="$FLAGS --verbosity 3"
   ;;
 "prover")
   FLAGS="$FLAGS --zkevmRpcdEndpoint=ws://127.0.0.1:18545"
   FLAGS="$FLAGS --zkevmRpcdParamsPath=12345"
   FLAGS="$FLAGS --l1.proverPrivKey=$HIVE_TAIKO_PROVER_PRIVATE_KEY"
   FLAGS="$FLAGS --dummy"
-  FLAGS="$FLAGS --verbosity 4"
   ;;
 "proposer")
   FLAGS="$FLAGS --l1.proposerPrivKey=$HIVE_TAIKO_PROPOSER_PRIVATE_KEY"
   FLAGS="$FLAGS --l2.suggestedFeeRecipient=$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT"
   FLAGS="$FLAGS --proposeInterval=$HIVE_TAIKO_PROPOSE_INTERVAL"
-  FLAGS="$FLAGS --verbosity 3"
   if [ "$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL" != "" ]; then
     FLAGS="$FLAGS --produceInvalidBlocks"
     FLAGS="$FLAGS --produceInvalidBlocksInterval=$HIVE_TAIKO_PRODUCE_INVALID_BLOCKS_INTERVAL"
