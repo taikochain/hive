@@ -6,7 +6,7 @@ build:
 	@go build . && go build -o hiveview cmd/hiveview/*.go
 
 clean:
-	@rm -rf hive hiveview
+	@rm -rf hive hiveview taiko-mono
 
 image:
 	@./taiko-image/build-taiko-l1.sh
