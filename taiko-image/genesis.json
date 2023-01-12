@@ -1,6 +1,6 @@
 {
   "config": {
-    "chainId": CHAIN_ID_PLACE_HOLDER,
+    "chainId": 31336,
     "homesteadBlock": 0,
     "eip150Block": 0,
     "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -17,7 +17,7 @@
     "grayGlacierBlock": 0,
     "mergeNetsplitBlock": 0,
     "clique": {
-      "period": PERIOD_PLACE_HOLDER,
+      "period": 5,
       "epoch": 30000
     }
   },

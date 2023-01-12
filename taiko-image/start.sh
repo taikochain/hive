@@ -60,10 +60,22 @@
 
 set -e
 
+apk add --update bash curl jq
+
+cat /tmp/genesis.json | jq ".config.chainId=$HIVE_TAIKO_L1_CHAIN_ID" | jq ".config.clique.period=$HIVE_CLIQUE_PERIOD" >genesis.json
+
+geth init genesis.json
+
+geth \
+  --nodiscover \
+  --allow-insecure-unlock \
+  --verbosity 2 \
+  --exec 'personal.importRawKey("'2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200'", null)' console
+
 geth \
   --nodiscover \
   --gcmode archive \
-  --networkid "$HIVE_NETWORK_ID" \
+  --networkid "$HIVE_TAIKO_L1_CHAIN_ID" \
   --http \
   --http.addr 0.0.0.0 \
   --http.vhosts l1_geth \

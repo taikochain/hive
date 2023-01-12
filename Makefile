@@ -8,11 +8,14 @@ build:
 clean:
 	@rm -rf hive hiveview
 
-testops: build
+image:
+	@./taiko-image/build-taiko-l1.sh
+
+testops: image build
 	@echo "$(shell date) Starting taiko/ops simulation"
 	./hive --sim=taiko/ops ${HIVEFLAGS}
 
-testrpc: build
+testrpc: image build
 	@echo "$(shell date) Starting taiko/rpc simulation"
 	./hive --sim=taiko/rpc ${HIVEFLAGS}
 
@@ -21,6 +24,7 @@ test: build
 	./hive --sim=taiko ${HIVEFLAGS}
 
 .PHONY: build \
+		image \
 		clean \
 		test \
 		testops \

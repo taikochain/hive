@@ -22,9 +22,5 @@ RUN go build -v .
 FROM alpine:latest
 
 COPY --from=builder /source/ops/ops .
-COPY ./clients/taiko-l1/genesis.json /genesis.json
-COPY ./simulators/taiko/rpc/start.sh /start.sh
-
-RUN chmod +x /start.sh && /start.sh
 
 ENTRYPOINT ["./ops"]

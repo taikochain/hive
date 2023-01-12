@@ -40,38 +40,14 @@ func (e *TestEnv) NewL1ELNode(l2 *ELNode, opts ...NodeOption) *ELNode {
 		WithRole("L1Engine"),
 		WithL1ChainID(c.L1.ChainID),
 		WithNetworkID(c.L1.NetworkID),
-		WithCliquePeriod(c.L1.MineInterval),
+		WithCliquePeriod(c.L1.CliquePeriod),
 	)
 	n := NewNode(t, def, opts...)
-	l1 := &ELNode{Node: n}
-	e.deployL1Contracts(l1, l2)
+	l1 := &ELNode{
+		Node:   n,
+		deploy: n.getL1Deployments(t),
+	}
 	return l1
-}
-
-// deployL1Contracts runs the `npx hardhat deploy_l1` command in `taiko-protocol` container
-func (e *TestEnv) deployL1Contracts(l1, l2 *ELNode) {
-	t, c, def := e.T, e.Conf, e.Clients.Contract
-	opts := []NodeOption{
-		WithNoCheck(),
-		WithPrivateKey(c.L1.Deployer.PrivateKeyHex),
-		WithL1DeployerAddress(c.L1.Deployer.Address),
-		WithL2GenesisBlockHash(l2.genesisHash),
-		WithL2ContractAddress(l2.deploy.rollupAddress),
-		WithMainnetUrl(l1.HttpRpcEndpoint()),
-		WithL2ChainID(c.L2.ChainID),
-	}
-	t.Log("start deploy contracts on L1")
-	n := NewNode(t, def, opts...)
-	result, err := n.Exec("deploy.sh")
-	if err != nil || result.ExitCode != 0 {
-		t.Fatalf("failed to deploy contract on engine node %s, error: %v, result: %+v",
-			l1.Container, err, result)
-	}
-	t.Logf("Deploy contracts on %s %s(%s)", l1.Type, l1.Container, l1.IP)
-	t.Log("Deploy result begin")
-	t.Log(result.Stdout)
-	t.Log("Deploy result end")
-	l1.deploy = n.getL1Deployments(t)
 }
 
 func (n *Node) getL1Deployments(t *hivesim.T) *deployResult {

@@ -1,5 +1,4 @@
-ARG branch=latest
-FROM ethereum/client-go:$branch
+FROM taiko-l1:local
 
 RUN apk add --update bash curl jq
 
@@ -8,7 +7,9 @@ RUN mkdir /hive-bin
 ADD enode.sh /hive-bin/enode.sh
 RUN chmod +x /hive-bin/enode.sh
 
-COPY ./genesis.json /host/genesis.json
+COPY deploy_result.sh /hive-bin/deploy_result.sh
+RUN chmod +x /hive-bin/deploy_result.sh
+
 COPY ./start.sh /start.sh
 RUN chmod +x /start.sh
 
