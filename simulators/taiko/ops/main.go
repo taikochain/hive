@@ -89,7 +89,7 @@ func firstL2Block(t *hivesim.T) {
 func firstL1Block(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		env.GenCommitDelayBlocks(t)
-		taiko.WaitHeight(env.Context, env.Net.GetL1ELNode(0), taiko.GreaterEqual(1))
+		require.NoError(t, taiko.WaitHeight(env.Context, env.Net.GetL1ELNode(0), taiko.GreaterEqual(1)))
 	}
 }
 
@@ -263,9 +263,9 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	)
 	require.NoError(t, err)
 	env.GenCommitDelayBlocks(t)
-	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
-	require.Nil(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
-	require.Nil(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
+	require.NoError(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
+	require.NoError(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
+	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
@@ -295,10 +295,10 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 
 	env.GenCommitDelayBlocks(t)
 
-	require.Nil(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
+	require.NoError(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
 
-	require.Nil(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
-	require.Nil(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
+	require.NoError(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
+	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
