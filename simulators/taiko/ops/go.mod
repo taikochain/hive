@@ -3,7 +3,7 @@ module github.com/ethereum/hive/simulators/taiko/ops
 go 1.18
 
 replace (
-	github.com/ethereum/go-ethereum v1.10.26 => github.com/taikochain/taiko-geth v0.0.0-20221223061332-67c60b50b123
+	github.com/ethereum/go-ethereum v1.10.26 => github.com/taikoxyz/taiko-geth v0.0.0-20221223061332-67c60b50b123
 )
 
 require (
