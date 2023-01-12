@@ -93,6 +93,7 @@ func runAllTests(t *hivesim.T) {
 
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
+	defer env.StopSingleNodeNet()
 	l2 := env.Net.GetL2ELNode(0)
 	l2Genesis := core.TaikoGenesisBlock(env.Conf.L2.NetworkID)
 	// Need to adapt the tests a bit to work with the common

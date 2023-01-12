@@ -90,6 +90,28 @@ func (e *TestEnv) StartSingleNodeNet() {
 	)
 }
 
+func (e *TestEnv) StopSingleNodeNet() {
+	t := e.T
+	for _, n := range e.Net.drivers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.proposers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.provers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.drivers {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.L1Engines {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+	for _, n := range e.Net.L2Engines {
+		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
+	}
+}
+
 func (e *TestEnv) StartL1L2Driver(l2Opts ...NodeOption) {
 	e.StartL1L2(l2Opts...)
 	l1, l2 := e.Net.GetL1ELNode(0), e.Net.GetL2ELNode(0)

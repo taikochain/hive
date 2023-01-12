@@ -67,6 +67,7 @@ func firstL2Block(t *hivesim.T) {
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
+	defer env.StopSingleNodeNet()
 
 	// generate the first L2 transaction
 	cli, err := env.Net.GetL2ELNode(0).EthClient()
@@ -111,6 +112,7 @@ func syncL2Block(t *hivesim.T) {
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
+	defer env.StopSingleNodeNet()
 
 	blockCnt := uint64(10)
 	env.GenSomeL2Blocks(t, blockCnt)
