@@ -18,6 +18,4 @@ FROM alpine:latest
 COPY --from=builder /source/taiko/config.json .
 COPY --from=builder /source/rpc/rpc .
 
-RUN chmod +x /start.sh && /start.sh
-
 ENTRYPOINT ["./rpc"]
