@@ -21,26 +21,26 @@ import (
 )
 
 var tests = []*hivesim.TestSpec{
-	// {
-	// 	Name:        "firstL2Block",
-	// 	Description: "Relevant tests for the generation of the first L2 block",
-	// 	Run:         firstL2Block,
-	// },
-	// {
-	// 	Name:        "sync test",
-	// 	Description: "L2 block synchronization related tests",
-	// 	Run:         syncL2Block,
-	// },
-	// {
-	// 	Name:        "tooManyPendingBlocks",
-	// 	Description: "Too many pending blocks will block further proposes",
-	// 	Run:         tooManyPendingBlocks,
-	// },
-	// {
-	// 	Name:        "proposeInvalidTxListBytes",
-	// 	Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
-	// 	Run:         proposeInvalidTxListBytes,
-	// },
+	{
+		Name:        "firstL2Block",
+		Description: "Relevant tests for the generation of the first L2 block",
+		Run:         firstL2Block,
+	},
+	{
+		Name:        "sync test",
+		Description: "L2 block synchronization related tests",
+		Run:         syncL2Block,
+	},
+	{
+		Name:        "tooManyPendingBlocks",
+		Description: "Too many pending blocks will block further proposes",
+		Run:         tooManyPendingBlocks,
+	},
+	{
+		Name:        "proposeInvalidTxListBytes",
+		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
+		Run:         proposeInvalidTxListBytes,
+	},
 	{
 		Name:        "proposeTxListIncludingInvalidTx",
 		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
