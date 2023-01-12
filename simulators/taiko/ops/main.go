@@ -341,6 +341,6 @@ func runAllTests(t *hivesim.T) {
 	defer cancel()
 	taiko.RunTests(t, ctx, &taiko.RunTestsParams{
 		Tests:       tests,
-		Concurrency: 40,
+		Concurrency: 2,
 	})
 }
