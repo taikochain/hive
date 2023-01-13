@@ -93,13 +93,10 @@ func (e *TestEnv) StartSingleNodeNet() {
 
 func (e *TestEnv) StopSingleNodeNet() {
 	t := e.T
-	for _, n := range e.Net.drivers {
+	for _, n := range e.Net.provers {
 		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
 	}
 	for _, n := range e.Net.proposers {
-		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
-	}
-	for _, n := range e.Net.provers {
 		t.Sim.StopClient(t.SuiteID, t.TestID, n.Container)
 	}
 	for _, n := range e.Net.drivers {
