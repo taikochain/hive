@@ -1,4 +1,4 @@
-#!/use/bin/env bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -73,7 +73,7 @@ start_l1_container() {
         docker run \
             -d \
             --name ${l1_container_name} \
-            -e HIVE_TAIKO_l1_network_id="${l1_network_id}" \
+            -e HIVE_TAIKO_L1_CHAIN_ID="${l1_network_id}" \
             -e HIVE_CLIQUE_PERIOD="${l1_clique_period}" \
             -v "${workdir}/genesis.json":/tmp/genesis.json \
             -v "${workdir}/start-l1.sh":/start.sh \
@@ -84,15 +84,15 @@ start_l1_container() {
 }
 
 deploy_l1_protocol() {
-    echo "compile protocol"
+    mono_dir="/tmp/taiko-mono"
 
-    if [ ! -d "taiko-mono" ]; then
-        git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git
-    fi
+    rm -fr ${mono_dir}
 
-    cp "${workdir}/LibSharedConfig.sol" taiko-mono/packages/protocol/contracts/libs/LibSharedConfig.sol
+    git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git ${mono_dir}
 
-    cd taiko-mono/packages/protocol
+    cp "${workdir}/LibSharedConfig.sol" ${mono_dir}/packages/protocol/contracts/libs/LibSharedConfig.sol
+
+    cd ${mono_dir}/packages/protocol
 
     pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile
 
@@ -114,21 +114,20 @@ deploy_l1_protocol() {
     FLAGS="--network mainnet"
     FLAGS="$FLAGS --dao-vault $HIVE_TAIKO_L1_DEPLOYER_ADDRESS"
     FLAGS="$FLAGS --team-vault $HIVE_TAIKO_L1_DEPLOYER_ADDRESS"
-    FLAGS="$FLAGS --l2-genesis-block-hash $l2_genesis_hash"
-    FLAGS="$FLAGS --l2-chain-id $l2_network_id"
-    FLAGS="$FLAGS --taiko-l2 $l2_taiko_addr"
+    FLAGS="$FLAGS --l2-genesis-block-hash ${l2_genesis_hash}"
+    FLAGS="$FLAGS --l2-chain-id ${l2_network_id}"
+    FLAGS="$FLAGS --taiko-l2 ${l2_taiko_addr}"
     FLAGS="$FLAGS --confirmations 1"
-
     echo "Deploy L1 rollup contacts with flags $FLAGS"
-
-    LOG_LEVEL=debug npx hardhat deploy_L1 "$FLAGS"
+    LOG_LEVEL=debug npx hardhat deploy_L1 $FLAGS
 
     docker cp deployments/mainnet_L1.json "${l1_container_name}:/mainnet_L1.json"
 
+    cd -
     echo "Success to deploy contact on ${containerID}"
 }
 
-buildL1Image() {
+build_l1_image() {
     docker commit -m "$(whoami)" -m "taiko-l1-image" "${containerID}" taiko-l1:local
     docker container rm -f ${l1_container_name}
     echo "Success to build taiko-l1 image"
@@ -136,4 +135,4 @@ buildL1Image() {
 
 start_l1_container
 deploy_l1_protocol
-buildL1Image
+build_l1_image
