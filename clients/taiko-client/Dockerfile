@@ -1,5 +1,4 @@
-ARG branch=main
-FROM gcr.io/evmchain/taiko-client:$branch
+FROM taiko-client:local
 
 ADD start.sh /start.sh
 RUN chmod +x /start.sh

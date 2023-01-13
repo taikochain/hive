@@ -6,10 +6,11 @@ build:
 	@go build . && go build -o hiveview cmd/hiveview/*.go
 
 clean:
-	@rm -rf hive hiveview /tmp/taiko-mono
+	@rm -rf hive hiveview /tmp/taiko-mono /tmp/taiko-client
 
 image:
 	@./taiko-image/build-l1-image.sh
+	@./taiko-image/build-client-image.sh
 
 testops: image build
 	@echo "$(shell date) Starting taiko/ops simulation"
