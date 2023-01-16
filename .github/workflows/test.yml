@@ -21,3 +21,14 @@ jobs:
         run: |
           TRIGGER_REPO=${{ github.event.client_payload.repo }} TRIGGER_REF=${{ github.event.client_payload.ref }}
           cd /mnt/disks/data/go/src/github.com/taikoxyz/hive && git checkout taiko && git pull origin taiko && make test
+  comment:
+    name: Comment taiko-client PR
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Start test
+        run: |
+          curl -X POST \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
+          https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
+          -d '{"event_type":"comment","client_payload":{"pass":false, "url":""  }}'
