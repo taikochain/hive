@@ -31,4 +31,4 @@ jobs:
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
           https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_payload":{"pass":false, "url":""  }}'
+          -d '{"event_type":"comment","client_payload":{"pass":false, "url":"http://hive.a1.taiko.xyz/"}}'
