@@ -1,4 +1,4 @@
-name: run taiko hive tests
+name: Run Taiko Tests
 
 on:
   push:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    name: start hive test
+    name: Start Taiko Test
     runs-on: [self-hosted, linux]
     steps:
       - name: Start test
