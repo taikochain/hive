@@ -91,11 +91,6 @@ func runAllTests(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	env := taiko.NewTestEnv(ctx, t)
-	env.StartSingleNodeNet()
-	defer env.StopSingleNodeNet()
-	l2 := env.Net.GetL2ELNode(0)
-	l2Genesis := core.TaikoGenesisBlock(env.Conf.L2.NetworkID)
 	// Need to adapt the tests a bit to work with the common
 	// libraries in the taiko package.
 	adaptedTests := make([]*hivesim.TestSpec, len(tests))
@@ -104,6 +99,11 @@ func runAllTests(t *hivesim.T) {
 			Name:        fmt.Sprintf("%s (%s)", test.Name, "taiko-l2"),
 			Description: test.About,
 			Run: func(t *hivesim.T) {
+				env := taiko.NewTestEnv(ctx, t)
+				env.StartSingleNodeNet()
+				defer env.StopSingleNodeNet()
+				l2 := env.Net.GetL2ELNode(0)
+				l2Genesis := core.TaikoGenesisBlock(env.Conf.L2.NetworkID)
 				switch test.Name[:strings.IndexByte(test.Name, '/')] {
 				case "http":
 					RunHTTP(t, l2.Client, env.L2Vault, l2Genesis, test.Run)
@@ -115,9 +115,8 @@ func runAllTests(t *hivesim.T) {
 			},
 		}
 	}
-	taiko.RunTests(env.T, env.Context, &taiko.RunTestsParams{
-		Devnet:      env.Net,
+	taiko.RunTests(t, ctx, &taiko.RunTestsParams{
 		Tests:       adaptedTests,
-		Concurrency: 40,
+		Concurrency: 15,
 	})
 }

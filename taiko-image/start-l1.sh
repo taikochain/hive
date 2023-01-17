@@ -46,6 +46,7 @@
 #  - HIVE_LES_SERVER              set to '1' to enable LES server
 
 # Taiko environment variables
+#
 #  - HIVE_TAIKO_L1_RPC_ENDPOINT                      rpc endpoint of the l1 node
 #  - HIVE_TAIKO_L2_RPC_ENDPOINT                      rpc endpoint of the l2 node
 #  - HIVE_TAIKO_L2_ENGINE_ENDPOINT                   engine endpoint of the l2 node
@@ -55,7 +56,37 @@
 #  - HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT              suggested fee recipient
 #  - HIVE_TAIKO_PROPOSE_INTERVAL                     propose interval
 #  - HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY  private key of the throwaway block builder
-#  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
 #  - HIVE_TAIKO_PROVER_PRIVATE_KEY                   private key of the prover
 
 set -e
+
+apk add --update bash curl jq
+
+cat /tmp/genesis.json | jq ".config.chainId=$HIVE_TAIKO_L1_CHAIN_ID" | jq ".config.clique.period=$HIVE_CLIQUE_PERIOD" >genesis.json
+
+geth init genesis.json
+
+geth \
+  --nodiscover \
+  --allow-insecure-unlock \
+  --verbosity 2 \
+  --exec 'personal.importRawKey("'2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200'", null)' console
+
+geth \
+  --nodiscover \
+  --gcmode archive \
+  --networkid "$HIVE_TAIKO_L1_CHAIN_ID" \
+  --http \
+  --http.addr 0.0.0.0 \
+  --http.vhosts l1_geth \
+  --http.vhosts=* \
+  --http.api debug,eth,net,web3,txpool,miner \
+  --ws \
+  --ws.addr 0.0.0.0 \
+  --ws.origins '*' \
+  --ws.api debug,eth,net,web3,txpool,miner \
+  --allow-insecure-unlock \
+  --password /dev/null \
+  --unlock 0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39 \
+  --verbosity 2 \
+  --mine

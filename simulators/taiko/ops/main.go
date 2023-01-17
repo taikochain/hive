@@ -218,7 +218,8 @@ func tooManyPendingBlocks(t *hivesim.T) {
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 
-	prop := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	prop, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	require.NoError(t, err)
 
 	taikoL1, err := l1.TaikoL1Client()
 	require.NoError(t, err)
@@ -252,7 +253,8 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	env.StartL1L2(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	p, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	require.NoError(t, err)
 
 	invalidTxListBytes := testutils.RandomBytes(256)
 	meta, commitTx, err := p.CommitTxList(
@@ -283,7 +285,8 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	env.StartL1L2Driver(taiko.WithELNodeType("full"))
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	p := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	p, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	require.NoError(t, err)
 
 	invalidTx := generateInvalidTransaction(env)
 
@@ -341,6 +344,6 @@ func runAllTests(t *hivesim.T) {
 	defer cancel()
 	taiko.RunTests(t, ctx, &taiko.RunTestsParams{
 		Tests:       tests,
-		Concurrency: 40,
+		Concurrency: 15,
 	})
 }

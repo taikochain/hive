@@ -60,17 +60,6 @@
 
 set -e
 
-cat /host/genesis.json | sed -i "s/CHAIN_ID_PLACE_HOLDER/$HIVE_TAIKO_L1_CHAIN_ID/g" /host/genesis.json
-cat /host/genesis.json | sed -i "s/PERIOD_PLACE_HOLDER/$HIVE_CLIQUE_PERIOD/g" /host/genesis.json
-
-geth init /host/genesis.json
-
-geth \
-  --nodiscover \
-  --allow-insecure-unlock \
-  --verbosity 2 \
-  --exec 'personal.importRawKey("'2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501200'", null)' console
-
 geth \
   --nodiscover \
   --gcmode archive \
