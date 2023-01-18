@@ -6,7 +6,6 @@ on:
   repository_dispatch:
     types: [start]
   workflow_dispatch:
-  pull_request:
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
@@ -17,11 +16,6 @@ jobs:
   test:
     name: Start Taiko Test
     runs-on: [self-hosted, linux]
-    env:
-      REPO: ${{ github.event.client_payload.repo }}
-      REF: ${{ github.event.client_payload.ref }}
-      REF_NAME: ${{ github.event.client_payload.ref_name }}
-      HEAD_REF: ${{ github.event.client_payload.head_ref }}
     defaults:
       run:
         shell: bash
@@ -36,12 +30,15 @@ jobs:
         run: mkdir -p ${{ steps.result.outputs.RESULTS_DIR }}
 
       - name: mock test
+        if: false
         run: |
           cp workspace/logs/1674016820-c33c2bad1000c7d7af1db17a51b7a2e9.json ${{ steps.result.outputs.RESULTS_DIR }}
 
       - name: Start test
-        if: false
         env:
+          REPO: ${{ github.event.client_payload.repo }}
+          REF: ${{ github.event.client_payload.ref }}
+          HEAD_REF: ${{ github.event.client_payload.head_ref }}
           RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |
           git checkout taiko
@@ -64,7 +61,7 @@ jobs:
           echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
           echo "RESULT='pass: ${{ steps.analysis.outputs.PASS }}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.DETAIL }}'"  >> $GITHUB_OUTPUT
 
-      - name: mock comment
+      - name: Show Some Info
         run: |
           echo ${{ steps.analysis.outputs.PASS }}
           echo ${{ steps.analysis.outputs.DETAIL }}
