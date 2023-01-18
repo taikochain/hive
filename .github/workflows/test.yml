@@ -32,7 +32,7 @@ jobs:
       - name: Create Result Dir
         id: log
         run: |
-          echo "RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1) >> ${GITHUB_OUTPUT}
+          echo "RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)" >> ${GITHUB_OUTPUT}
       - name: Start test
         run: |
           echo  ${{ steps.log.outputs.RESULTS_DIR }}
