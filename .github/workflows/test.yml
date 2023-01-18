@@ -33,8 +33,8 @@ jobs:
         run: |
           echo ${{ github.ref }}
           echo ${{ github.ref_name }}
-          RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)
-          mkdir ${RESULTS_DIR}
+          # RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)
+          # mkdir ${RESULTS_DIR}
       - name: Start test
         run: |
           echo "finish test"
