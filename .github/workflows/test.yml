@@ -31,10 +31,9 @@ jobs:
     steps:
       - name: Create Result Dir
         run: |
-          echo ${{ github.ref }}
-          echo ${{ github.ref_name }}
-          # RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)
-          # mkdir ${RESULTS_DIR}
+          echo ${{ github.ref_name }} > test.txt
+          RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)
+          mkdir ${RESULTS_DIR}
       - name: Start test
         run: |
           echo "finish test"
@@ -48,7 +47,7 @@ jobs:
       #     echo ${PASS}
 
       # - name: Comment taiko-client PR
-      #   if: ${{ github.event.client_payload.ref }}
+      #   if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
       #   run: |
       #     curl -X POST \
       #     -H "Accept: application/vnd.github.everest-preview+json" \
