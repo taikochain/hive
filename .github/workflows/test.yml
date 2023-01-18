@@ -47,7 +47,8 @@ jobs:
       - name: Analysis Test Result
         id: analysis
         run: |
-          echo "PASS=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)" >> $GITHUB_OUTPUT
+          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)
+          echo "PASS=${{ failed==0 }}" >> $GITHUB_OUTPUT
 
       - name: Comment taiko-client PR
         # if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
