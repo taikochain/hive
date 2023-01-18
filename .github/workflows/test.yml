@@ -30,17 +30,15 @@ jobs:
         working-directory: /mnt/disks/data/go/src/github.com/taikoxyz/hive
     steps:
       - name: Create Result Dir
-        id: log
         run: |
-          echo "RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)" >> ${GITHUB_OUTPUT}
+          RESULTS_DIR=workspace/logs/$(date +%s)
+          mkdir -p ${RESULTS_DIR}
       - name: Start test
         run: |
-          echo  ${{ steps.log.outputs.RESULTS_DIR }}
-          mkdir ${{ steps.log.outputs.RESULTS_DIR }}
           echo "finish test"
-          # git checkout taiko
-          # git pull origin taiko
-          # make testrpc
+          git checkout taiko
+          git pull origin taiko
+          make testrpc
 
       # - name: Analysis result
       #   run: |
