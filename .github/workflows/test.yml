@@ -58,19 +58,28 @@ jobs:
           FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
           echo "PASS=${{ env.FAILED==0 }}" >> $GITHUB_OUTPUT
 
+      - name: Generate  Payload
+        id: payload
+        run: |
+          echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
+          echo "RESULT='pass: ${{ steps.analysis.outputs.PASS }}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.DETAIL }}'"  >> $GITHUB_OUTPUT
+
       - name: mock comment
         run: |
           echo ${{ steps.analysis.outputs.PASS }}
-          echo ${{ steps.analysis.outputs.FILE }}
+          echo ${{ steps.analysis.outputs.DETAIL }}
+          echo ${{ steps.payload.outputs.PR_NUM }}
+          echo ${{ steps.payload.outputs.RESULT }}
 
       - name: Comment taiko-client PR
-        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') &&   startsWith(github.event.client_payload.ref,'refs/pull')
+        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_payload.ref,'refs/pull')
         run: |
+          pr_number=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)
           curl -X POST \
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
           https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_payload":{"results":"pass":${{ steps.analysis.outputs.PASS }}, "url":"http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.FILE }}"}}'
+          -d '{"event_type":"comment","client_payload":{"pr_number":${{ steps.payload.outputs.PR_NUM }}, "results":${{ steps.payload.outputs.RESULT }} }}'
 
       - name: Clean
         run: |
