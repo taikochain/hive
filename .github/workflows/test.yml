@@ -61,7 +61,7 @@ jobs:
           echo ${{ steps.analysis.outputs.FILE }}
 
       - name: Comment taiko-client PR
-        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') &&   startsWith(github.event.client_payload.ref,"refs/pull")
+        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') &&   startsWith(github.event.client_payload.ref,'refs/pull')
         run: |
           curl -X POST \
           -H "Accept: application/vnd.github.everest-preview+json" \
