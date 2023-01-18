@@ -56,7 +56,7 @@ jobs:
           file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
           echo "DETAIL=${file}" >> $GITHUB_OUTPUT
           FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
-          echo "PASS=${{ ${env.FAILED}==0 }}" >> $GITHUB_OUTPUT
+          echo "PASS=${{ env.FAILED==0 }}" >> $GITHUB_OUTPUT
 
       - name: mock comment
         run: |
