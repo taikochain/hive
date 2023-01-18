@@ -52,7 +52,7 @@ jobs:
       - name: Comment taiko-client PR
         # if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
         run: |
-          echo ${{ ${{ steps.analysis.outputs.FAILED }} == 0 }}
+          echo ${{ steps.analysis.outputs.FAILED == 0 }}
           # curl -X POST \
           # -H "Accept: application/vnd.github.everest-preview+json" \
           # -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
