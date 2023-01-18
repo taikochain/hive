@@ -47,13 +47,12 @@ jobs:
       - name: Analysis Test Result
         id: analysis
         run: |
-          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)
-          echo "PASS=${{ failed==0 }}" >> $GITHUB_OUTPUT
+          echo "FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)" >> $GITHUB_OUTPUT
 
       - name: Comment taiko-client PR
         # if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
         run: |
-          echo ${{ steps.analysis.outputs.PASS }}
+          echo ${{ ${{ steps.analysis.outputs.FAILED }} == 0 }}
           # curl -X POST \
           # -H "Accept: application/vnd.github.everest-preview+json" \
           # -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
