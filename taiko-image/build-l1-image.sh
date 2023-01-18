@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+tmp_dir=/mnt/disks/data/tmp
 
 workdir=$(
     cd "$(dirname $0)"
@@ -84,15 +84,15 @@ start_l1_container() {
 }
 
 deploy_l1_protocol() {
-    mono_dir="/tmp/taiko-mono"
+    mono_dir="${tmp_dir}/taiko-mono"
 
-    rm -fr ${mono_dir}
+    rm -fr "${mono_dir}"
 
     git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git ${mono_dir}
 
     cp "${workdir}/LibSharedConfig.sol" ${mono_dir}/packages/protocol/contracts/libs/LibSharedConfig.sol
 
-    cd ${mono_dir}/packages/protocol
+    cd "${mono_dir}/packages/protocol"
 
     pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile
 

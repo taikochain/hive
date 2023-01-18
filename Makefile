@@ -1,12 +1,19 @@
+tmp_dir=/mnt/disks/data/tmp
+
 HIVEFLAGS=--client=taiko-l1,taiko-geth,taiko-client
 HIVEFLAGS+=--loglevel 4
 HIVEFLAGS+=--docker.output
 HIVEFLAGS+=--docker.nocache taiko
+ifneq (${RESULTS_DIR},"")
+	HIVEFLAGS+=--results-root ${RESULTS_DIR}
+endif
+
+
 build:
 	@go build . && go build -o hiveview cmd/hiveview/*.go
 
 clean:
-	@rm -rf hive hiveview /tmp/taiko-mono /tmp/taiko-client
+	@sh clean.sh${tmp_dir}/taiko-mono ${tmp_dir}/taiko-client
 
 image:
 	@./taiko-image/build-l1-image.sh

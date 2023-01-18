@@ -6,6 +6,7 @@ on:
   repository_dispatch:
     types: [start]
   workflow_dispatch:
+  pull_request:
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
@@ -16,19 +17,41 @@ jobs:
   test:
     name: Start Taiko Test
     runs-on: [self-hosted, linux]
+    env:
+      REPO: ${{ github.event.client_payload.repo }}
+      REF: ${{ github.event.client_payload.ref }}
+      REF_NAME: ${{ github.event.client_payload.ref_name }}
+      HEAD_REF: ${{ github.event.client_payload.head_ref }}
+      RESULTS_DIR: workspace/logs
+      PASS: false
+    defaults:
+      run:
+        shell: bash
+        working-directory: /mnt/disks/data/go/src/github.com/taikoxyz/hive
     steps:
+      - name: Create Result Dir
+        run: |
+          echo ${{ github.ref }}
+          echo ${{ github.ref_name }}
+          RESULTS_DIR=$(cat /dev/urandom | tr -dc '[:alpha:]' | fold -w ${1:-20} | head -n 1)
+          mkdir ${RESULTS_DIR}
       - name: Start test
         run: |
-          TRIGGER_REPO=${{ github.event.client_payload.repo }} TRIGGER_REF=${{ github.event.client_payload.ref }}
-          cd /mnt/disks/data/go/src/github.com/taikoxyz/hive && git checkout taiko && git pull origin taiko && make test
-  comment:
-    name: Comment taiko-client PR
-    runs-on: [self-hosted, linux]
-    steps:
-      - name: Start test
-        run: |
-          curl -X POST \
-          -H "Accept: application/vnd.github.everest-preview+json" \
-          -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
-          https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_payload":{"pass":false, "url":"http://hive.a1.taiko.xyz/"}}'
+          echo "finish test"
+          # git checkout taiko
+          # git pull origin taiko
+          # make testrpc
+
+      # - name: Analysis result
+      #   run: |
+      #     PASS=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${RESULTS_DIR}/*.json)
+      #     echo ${PASS}
+
+      # - name: Comment taiko-client PR
+      #   if: ${{ github.event.client_payload.ref }}
+      #   run: |
+      #     curl -X POST \
+      #     -H "Accept: application/vnd.github.everest-preview+json" \
+      #     -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
+      #     https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
+      #     -d '{"event_type":"comment","client_payload":{"results":"pass:false, url:http://hive.a1.taiko.xyz/"}}'
