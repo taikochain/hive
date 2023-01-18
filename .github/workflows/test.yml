@@ -50,11 +50,13 @@ jobs:
 
       - name: Analysis Test Result
         id: analysis
+        env:
+          FAILED: 0
         run: |
           file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
           echo "DETAIL=${file}" >> $GITHUB_OUTPUT
-          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
-          echo "PASS=${{ ${failed}==0 }}" >> $GITHUB_OUTPUT
+          FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
+          echo "PASS=${{ ${env.FAILED}==0 }}" >> $GITHUB_OUTPUT
 
       - name: mock comment
         run: |
