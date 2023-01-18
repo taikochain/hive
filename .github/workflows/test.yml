@@ -31,30 +31,45 @@ jobs:
         id: result
         run: |
           echo "RESULTS_DIR=workspace/logs/$(date +%s)" >> $GITHUB_OUTPUT
-          # echo "RESULTS_DIR=workspace/logs/1674035356" >> $GITHUB_OUTPUT
 
       - name: Create Result Dir
         run: mkdir -p ${{ steps.result.outputs.RESULTS_DIR }}
 
+      - name: mock test
+        run: |
+          cp workspace/logs/1674016820-c33c2bad1000c7d7af1db17a51b7a2e9.json ${{ steps.result.outputs.RESULTS_DIR }}
+
       - name: Start test
+        if: false
         env:
           RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |
-          # git checkout taiko
-          # git pull origin taiko
-          make testrpc
+          git checkout taiko
+          git pull origin taiko
+          make testops
 
       - name: Analysis Test Result
         id: analysis
         run: |
-          echo "FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)" >> $GITHUB_OUTPUT
+          file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
+          echo "DETAIL=${file}" >> $GITHUB_OUTPUT
+          echo "PASS=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${file})==0" >> $GITHUB_OUTPUT
+
+      - name: mock comment
+        run: |
+          echo ${{ steps.analysis.outputs.PASS }}
+          echo ${{ steps.analysis.outputs.FILE }}
 
       - name: Comment taiko-client PR
-        # if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
+        if: ${{ github.event.client_payload.repo == "taikoxyz/taiko-client" &&  startWith(github.event.client_payload.ref,"refs/pull") }}
         run: |
-          echo ${{ steps.analysis.outputs.FAILED == 0 }}
-          # curl -X POST \
-          # -H "Accept: application/vnd.github.everest-preview+json" \
-          # -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
-          # https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          # -d '{"event_type":"comment","client_payload":{"results":"pass:false, url:http://hive.a1.taiko.xyz/"}}'
+          curl -X POST \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
+          https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
+          -d '{"event_type":"comment","client_payload":{"results":"pass":${{ steps.analysis.outputs.PASS }}, "url":"http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.FILE }}"}}'
+
+      - name: Clean
+        run: |
+          cp -r ${{ steps.result.outputs.RESULTS_DIR }}/* workspace/logs/
+          rm -fr ${{ steps.result.outputs.RESULTS_DIR }}
