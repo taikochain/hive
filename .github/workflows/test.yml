@@ -22,34 +22,39 @@ jobs:
       REF: ${{ github.event.client_payload.ref }}
       REF_NAME: ${{ github.event.client_payload.ref_name }}
       HEAD_REF: ${{ github.event.client_payload.head_ref }}
-      RESULTS_DIR: workspace/logs
-      PASS: false
     defaults:
       run:
         shell: bash
         working-directory: /mnt/disks/data/go/src/github.com/taikoxyz/hive
     steps:
+      - name: Generate Result DirName
+        id: result
+        run: |
+          echo "RESULTS_DIR=workspace/logs/$(date +%s)" >> $GITHUB_OUTPUT
+          # echo "RESULTS_DIR=workspace/logs/1674035356" >> $GITHUB_OUTPUT
+
       - name: Create Result Dir
-        run: |
-          RESULTS_DIR=workspace/logs/$(date +%s)
-          mkdir -p ${RESULTS_DIR}
+        run: mkdir -p ${{ steps.result.outputs.RESULTS_DIR }}
+
       - name: Start test
+        env:
+          RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |
-          echo "finish test"
-          git checkout taiko
-          git pull origin taiko
+          # git checkout taiko
+          # git pull origin taiko
           make testrpc
 
-      # - name: Analysis result
-      #   run: |
-      #     PASS=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${RESULTS_DIR}/*.json)
-      #     echo ${PASS}
+      - name: Analysis Test Result
+        id: analysis
+        run: |
+          echo "PASS=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/*.json)" >> $GITHUB_OUTPUT
 
-      # - name: Comment taiko-client PR
-      #   if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
-      #   run: |
-      #     curl -X POST \
-      #     -H "Accept: application/vnd.github.everest-preview+json" \
-      #     -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
-      #     https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-      #     -d '{"event_type":"comment","client_payload":{"results":"pass:false, url:http://hive.a1.taiko.xyz/"}}'
+      - name: Comment taiko-client PR
+        # if: ${{ startWith(github.event.client_payload.ref,"refs/pull") }}
+        run: |
+          echo ${{ steps.analysis.outputs.PASS }}
+          # curl -X POST \
+          # -H "Accept: application/vnd.github.everest-preview+json" \
+          # -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
+          # https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
+          # -d '{"event_type":"comment","client_payload":{"results":"pass:false, url:http://hive.a1.taiko.xyz/"}}'
