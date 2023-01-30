@@ -77,4 +77,5 @@ geth \
   --password /dev/null \
   --unlock 0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39 \
   --verbosity 2 \
-  --mine
+  --mine \
+  --miner.etherbase 0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39

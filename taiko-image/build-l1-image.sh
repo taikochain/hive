@@ -94,6 +94,8 @@ deploy_l1_protocol() {
 
     cd "${mono_dir}/packages/protocol"
 
+    ./scripts/download_solc.sh
+
     pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile
 
     echo "Start deploying contact on ${containerID}"
