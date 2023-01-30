@@ -16,8 +16,69 @@ jobs:
   test:
     name: Start Taiko Test
     runs-on: [self-hosted, linux]
+    defaults:
+      run:
+        shell: bash
+        working-directory: /mnt/disks/data/go/src/github.com/taikoxyz/hive
     steps:
-      - name: Start test
+      - name: Generate Result DirName
+        id: result
         run: |
-          TRIGGER_REPO=${{ github.event.client_payload.repo }} TRIGGER_REF=${{ github.event.client_payload.ref }}
-          cd /mnt/disks/data/go/src/github.com/taikoxyz/hive && git checkout taiko && git pull origin taiko && make test
+          echo "RESULTS_DIR=workspace/logs/$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Create Result Dir
+        run: mkdir -p ${{ steps.result.outputs.RESULTS_DIR }}
+
+      - name: mock test
+        if: false
+        run: |
+          cp workspace/logs/1674016820-c33c2bad1000c7d7af1db17a51b7a2e9.json ${{ steps.result.outputs.RESULTS_DIR }}
+
+      - name: Start test
+        env:
+          REPO: ${{ github.event.client_payload.repo }}
+          REF: ${{ github.event.client_payload.ref }}
+          HEAD_REF: ${{ github.event.client_payload.head_ref }}
+          RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
+        run: |
+          git checkout taiko
+          git pull origin taiko
+          make testops
+
+      - name: Analysis Test Result
+        id: analysis
+        env:
+          FAILED: 0
+        run: |
+          file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
+          echo "DETAIL=${file}" >> $GITHUB_OUTPUT
+          FAILED=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
+          echo "PASS=${{ env.FAILED==0 }}" >> $GITHUB_OUTPUT
+
+      - name: Generate  Payload
+        id: payload
+        run: |
+          echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
+          echo "RESULT='pass: ${{ steps.analysis.outputs.PASS }}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.DETAIL }}'"  >> $GITHUB_OUTPUT
+
+      - name: Show Some Info
+        run: |
+          echo ${{ steps.analysis.outputs.PASS }}
+          echo ${{ steps.analysis.outputs.DETAIL }}
+          echo ${{ steps.payload.outputs.PR_NUM }}
+          echo ${{ steps.payload.outputs.RESULT }}
+
+      - name: Comment taiko-client PR
+        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_payload.ref,'refs/pull')
+        run: |
+          pr_number=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)
+          curl -X POST \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
+          https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
+          -d '{"event_type":"comment","client_payload":{"pr_number":${{ steps.payload.outputs.PR_NUM }}, "results":${{ steps.payload.outputs.RESULT }} }}'
+
+      - name: Clean
+        run: |
+          cp -r ${{ steps.result.outputs.RESULTS_DIR }}/* workspace/logs/
+          rm -fr ${{ steps.result.outputs.RESULTS_DIR }}

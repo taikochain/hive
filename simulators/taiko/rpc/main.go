@@ -117,6 +117,6 @@ func runAllTests(t *hivesim.T) {
 	}
 	taiko.RunTests(t, ctx, &taiko.RunTestsParams{
 		Tests:       adaptedTests,
-		Concurrency: 15,
+		Concurrency: 10,
 	})
 }
