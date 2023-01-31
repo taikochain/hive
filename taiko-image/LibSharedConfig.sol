@@ -44,8 +44,9 @@ library LibSharedConfig {
                 proofTimeCap: 60 minutes,
                 bootstrapDiscountHalvingPeriod: 180 days,
                 initialUncleDelay: 1 seconds, // change for hive test
-                enableTokenomics: false,
-                enablePublicInputsCheck: true
+                enableTokenomics: false, // change for hive test
+                enablePublicInputsCheck: false, // change for hive test
+                enableOracleProver: false // change for hive test
             });
     }
 }

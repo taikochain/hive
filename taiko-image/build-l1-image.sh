@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 tmp_dir=/mnt/disks/data/tmp
 
 workdir=$(
@@ -17,6 +19,8 @@ l2_network_id=$(jq -r .l2_network_id "${taiko_config_file}")
 
 l2_taiko_addr=""
 l2_genesis_hash=""
+
+debug=false
 
 function get_l2_taiko_Addr() {
     docker container rm -f ${l2_container_name}
@@ -86,15 +90,19 @@ start_l1_container() {
 deploy_l1_protocol() {
     mono_dir="${tmp_dir}/taiko-mono"
 
-    rm -fr "${mono_dir}"
-
-    git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git ${mono_dir}
+    if [[ "${debug}" != "true" ]]; then
+        rm -fr "${mono_dir}"
+        git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git ${mono_dir}
+    fi
 
     cp "${workdir}/LibSharedConfig.sol" ${mono_dir}/packages/protocol/contracts/libs/LibSharedConfig.sol
+    cp "${workdir}/LibZKP.sol" ${mono_dir}/packages/protocol/contracts/libs/LibZKP.sol
 
     cd "${mono_dir}/packages/protocol"
 
-    ./scripts/download_solc.sh
+    if [[ "${debug}" != "true" ]]; then
+        ./scripts/download_solc.sh
+    fi
 
     pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile
 
