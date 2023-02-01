@@ -44,7 +44,7 @@ jobs:
         run: |
           git checkout taiko
           git pull origin taiko
-          make testops
+          make test-client
 
       - name: Analysis Test Result
         id: analysis
