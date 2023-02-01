@@ -8,9 +8,8 @@ tmp_dir=/mnt/disks/data/tmp
 client_branch="main"
 if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
     if [[ "${REF}" == "refs/pull" ]]; then
-        echo "${REF} contains: refs/pull"
+        client_branch=${HEAD_REF}
     fi
-    client_branch=${HEAD_REF}
 fi
 
 build_client_image() {
