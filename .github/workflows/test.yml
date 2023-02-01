@@ -60,7 +60,7 @@ jobs:
         id: payload
         run: |
           echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
-          echo "RESULT='pass: ${{ steps.analysis.outputs.PASS }}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.DETAIL }}'"  >> $GITHUB_OUTPUT
+          echo "RESULT=pass: ${{ steps.analysis.outputs.PASS }}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${{ steps.analysis.outputs.DETAIL }}"  >> $GITHUB_OUTPUT
 
       - name: Show Some Info
         run: |
@@ -77,7 +77,7 @@ jobs:
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
           https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_payload":{"pr_number":${{ steps.payload.outputs.PR_NUM }}, "results":${{ steps.payload.outputs.RESULT }} }}'
+          -d '{"event_type":"comment","client_payload":{"pr_number":${{ steps.payload.outputs.PR_NUM }}, "results":"${{ steps.payload.outputs.RESULT }}" }}'
 
       - name: Clean
         run: |
