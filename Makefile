@@ -1,12 +1,13 @@
 tmp_dir=/mnt/disks/data/tmp
-
+result_dir=workspace/logs
+ifneq ("${RESULTS_DIR}","")
+	result_dir=${RESULTS_DIR}
+endif
 HIVEFLAGS=--client=taiko-l1,taiko-geth,taiko-client
 HIVEFLAGS+=--loglevel 4
 HIVEFLAGS+=--docker.output
 HIVEFLAGS+=--docker.nocache taiko
-ifneq (${RESULTS_DIR},"")
-	HIVEFLAGS+=--results-root ${RESULTS_DIR}
-endif
+HIVEFLAGS+=--results-root ${result_dir}
 
 
 build:

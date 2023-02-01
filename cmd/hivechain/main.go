@@ -2,20 +2,19 @@
 //
 // The 'generate' subcommand mines a new chain:
 //
-//     hivechain generate -length 10 -genesis ./genesis.json -blocktime 30 -output .
+//	hivechain generate -length 10 -genesis ./genesis.json -blocktime 30 -output .
 //
 // The 'print' subcommand displays blocks in a chain.rlp file:
 //
-//     hivechain print -v chain.rlp
+//	hivechain print -v chain.rlp
 //
 // The 'print-genesis' subcommand displays the block header fields of a genesis.json file:
 //
-//     hivechain print-genesis genesis.json
+//	hivechain print-genesis genesis.json
 //
 // The 'trim' subcommand extracts a range of blocks from a chain.rlp file:
 //
-//     hivechain trim -from 10 -to 100 chain.rlp newchain.rlp
-//
+//	hivechain trim -from 10 -to 100 chain.rlp newchain.rlp
 package main
 
 import (
