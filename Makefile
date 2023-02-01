@@ -20,11 +20,11 @@ image:
 	@./taiko-image/build-l1-image.sh
 	@./taiko-image/build-client-image.sh
 
-testops: image build
-	@echo "$(shell date) Starting taiko/ops simulation"
-	./hive --sim=taiko/ops ${HIVEFLAGS}
+test-client: image build
+	@echo "$(shell date) Starting taiko/client simulation"
+	./hive --sim=taiko/client ${HIVEFLAGS}
 
-testrpc: image build
+test-rpc: image build
 	@echo "$(shell date) Starting taiko/rpc simulation"
 	./hive --sim=taiko/rpc ${HIVEFLAGS}
 
@@ -36,6 +36,6 @@ test: image build
 		image \
 		clean \
 		test \
-		testops \
-		testrpc
+		test-client \
+		test-rpc
 

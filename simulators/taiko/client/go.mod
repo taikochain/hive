@@ -1,4 +1,4 @@
-module github.com/ethereum/hive/simulators/taiko/ops
+module github.com/ethereum/hive/simulators/taiko/client
 
 go 1.18
 
