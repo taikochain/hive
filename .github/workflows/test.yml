@@ -38,6 +38,7 @@ jobs:
         env:
           REPO: ${{ github.event.client_payload.repo }}
           REF: ${{ github.event.client_payload.ref }}
+          REF_NAME: ${{ github.event.client_payload.ref_name }}
           HEAD_REF: ${{ github.event.client_payload.head_ref }}
           RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |

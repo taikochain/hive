@@ -7,8 +7,10 @@ tmp_dir=/mnt/disks/data/tmp
 
 client_branch="main"
 if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
-    if [[ "${REF}" == "refs/pull" ]]; then
+    if [[ "${HEAD_REF}" != "" ]]; then
         client_branch=${HEAD_REF}
+    elif [[ "${REF_NAME}" != "" ]]; then
+        client_branch=${REF_NAME}
     fi
 fi
 
