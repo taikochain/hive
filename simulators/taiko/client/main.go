@@ -50,7 +50,7 @@ var tests = []*hivesim.TestSpec{
 
 func main() {
 	suit := hivesim.Suite{
-		Name:        "taiko ops",
+		Name:        "taiko client",
 		Description: "Test propose, sync and other things",
 	}
 	suit.Add(&hivesim.TestSpec{
