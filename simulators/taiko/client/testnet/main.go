@@ -23,26 +23,26 @@ import (
 var tests = []*hivesim.TestSpec{
 	{
 		Name:        "Generate the first taiko block",
-		Description: "Relevant tests for the generation of the first taiko block",
+		Description: "Tests related to the first generated taiko block",
 		Run:         firstTaikoBlock,
 	},
 	{
 		Name:        "Sync taiko block",
-		Description: "L2 block synchronization related tests",
-		Run:         syncL2Block,
+		Description: "Tests related to the synchronization of Taiko blocks",
+		Run:         syncTaikoBlock,
 	},
 	{
-		Name:        "tooManyPendingBlocks",
+		Name:        "Too many pending blocks block the propose process",
 		Description: "Too many pending blocks will block further proposes",
 		Run:         tooManyPendingBlocks,
 	},
 	{
-		Name:        "proposeInvalidTxListBytes",
+		Name:        "Propose invalid transaction list bytes",
 		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
 		Run:         proposeInvalidTxListBytes,
 	},
 	{
-		Name:        "proposeTxListIncludingInvalidTx",
+		Name:        "Propose transaction list including invalid transactions",
 		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
 		Run:         proposeTxListIncludingInvalidTx,
 	},
@@ -50,13 +50,14 @@ var tests = []*hivesim.TestSpec{
 
 func main() {
 	suit := hivesim.Suite{
-		Name:        "taiko client",
+		Name:        "taiko-client",
 		Description: "Test propose, sync and other things",
 	}
 	suit.Add(&hivesim.TestSpec{
-		Name:        "client test",
-		Description: "",
-		Run:         func(t *hivesim.T) { runAllTests(t) },
+		Name: "Client launch",
+		Description: `This test launches the client and runs the test tool.
+		Results from the test tool are reported as individual sub-tests.`,
+		Run: func(t *hivesim.T) { runAllTests(t) },
 	})
 	sim := hivesim.New()
 	hivesim.MustRun(sim, suit)
@@ -75,26 +76,26 @@ func firstTaikoBlock(t *hivesim.T) {
 	env.L2Vault.CreateAccount(ctx, cli, big.NewInt(params.Ether))
 
 	t.Run(hivesim.TestSpec{
-		Name: "first L1 block",
-		Run:  firstL1Block(env),
+		Name: "Generate the first taiko block on L1 chain",
+		Run:  GenFirstTaikoBlockOnL1(env),
 	})
 
 	t.Run(hivesim.TestSpec{
-		Name:        "firstVerifiedL2Block",
-		Description: "watch prove event of the first L2 block on L1",
-		Run:         firstVerifiedL2Block(env),
+		Name:        "Verify the first taiko block",
+		Description: "Watch prove event of the first taiko block on L1",
+		Run:         VerifyFirstTaikoBlockOnL1(env),
 	})
 }
 
-func firstL1Block(env *taiko.TestEnv) func(*hivesim.T) {
+func GenFirstTaikoBlockOnL1(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		env.GenCommitDelayBlocks(t)
 		require.NoError(t, taiko.WaitHeight(env.Context, env.Net.GetL1ELNode(0), taiko.GreaterEqual(1)))
 	}
 }
 
-// wait the a L2 transaction be proposed and proved as a L2 block.
-func firstVerifiedL2Block(env *taiko.TestEnv) func(*hivesim.T) {
+// wait the a taiko transaction be proposed and proved as a taiko block.
+func VerifyFirstTaikoBlockOnL1(env *taiko.TestEnv) func(*hivesim.T) {
 	ctx := env.Context
 	return func(t *hivesim.T) {
 		l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
@@ -107,7 +108,7 @@ func firstVerifiedL2Block(env *taiko.TestEnv) func(*hivesim.T) {
 	}
 }
 
-func syncL2Block(t *hivesim.T) {
+func syncTaikoBlock(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
@@ -118,22 +119,22 @@ func syncL2Block(t *hivesim.T) {
 	env.GenSomeL2Blocks(t, blockCnt)
 
 	t.Run(hivesim.TestSpec{
-		Name:        "sync from L1",
-		Description: "completes sync purely from L1 data to generate L2 block",
+		Name:        "Sync from L1",
+		Description: "Completes sync purely from L1 data to generate taiko block",
 		Run:         syncAllFromL1(env, blockCnt),
 	})
 	t.Run(hivesim.TestSpec{
-		Name:        "sync by snap",
-		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth snap mode",
+		Name:        "Sync by snap syncing of taiko engine",
+		Description: "Taiko chain head determined by L1, but sync block completes through taiko-geth snap mode",
 		Run:         syncBySnap(env),
 	})
 	t.Run(hivesim.TestSpec{
-		Name:        "sync by full",
+		Name:        "Sync by full syncing of taiko engine",
 		Description: "L2 chain head determined by L1, but sync block completes through taiko-geth full mode",
 		Run:         syncByFull(env),
 	})
 	t.Run(hivesim.TestSpec{
-		Name:        "sync by p2p and one by one",
+		Name:        "Cross-synchronized by p2p syncing of taiko engine and L1",
 		Description: "For more complicated synchronization scenarios, first synchronize to latestVerifiedHeight through P2P, and then synchronize through one-by-one, and simulate the driver disconnection in the middle process.",
 		Run:         syncByBothP2PAndOneByOne(env),
 	})

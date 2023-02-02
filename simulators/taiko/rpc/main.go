@@ -67,7 +67,7 @@ var tests = []testSpec{
 
 func main() {
 	suite := hivesim.Suite{
-		Name: "taiko rpc",
+		Name: "taiko-rpc",
 		Description: `
 The RPC test suite runs a set of RPC related tests against a running node. It tests
 several real-world scenarios such as sending value transactions, deploying a contract or
