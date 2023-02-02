@@ -11,16 +11,15 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/hive/simulators/taiko/rpc/testcontract"
 	"github.com/ethereum/hive/taiko"
 )
 
-//go:generate abigen -abi ./contractABI.json -pkg testcontract -type Contract -out ./testcontract/contract.go
+//go:generate abigen -abi ./contractABI.json -pkg taiko -type Contract -out ./taiko/contract.go
 
 // callContractTest uses the generated ABI binding to call methods in the
 // pre-deployed contract.
 func callContractTest(t *LegacyTestEnv) {
-	contract, err := testcontract.NewContractCaller(predeployedContractAddr, t.Eth)
+	contract, err := taiko.NewContractCaller(predeployedContractAddr, t.Eth)
 	if err != nil {
 		t.Fatalf("Unable to instantiate contract caller: %v", err)
 	}

@@ -22,12 +22,12 @@ import (
 
 var tests = []*hivesim.TestSpec{
 	{
-		Name:        "firstL2Block",
-		Description: "Relevant tests for the generation of the first L2 block",
-		Run:         firstL2Block,
+		Name:        "Generate the first taiko block",
+		Description: "Relevant tests for the generation of the first taiko block",
+		Run:         firstTaikoBlock,
 	},
 	{
-		Name:        "sync test",
+		Name:        "Sync taiko block",
 		Description: "L2 block synchronization related tests",
 		Run:         syncL2Block,
 	},
@@ -62,7 +62,7 @@ func main() {
 	hivesim.MustRun(sim, suit)
 }
 
-func firstL2Block(t *hivesim.T) {
+func firstTaikoBlock(t *hivesim.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
