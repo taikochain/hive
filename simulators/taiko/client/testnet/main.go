@@ -22,7 +22,7 @@ import (
 
 var tests = []*hivesim.TestSpec{
 	{
-		Name:        "firstL2Block",
+		Name:        "Generate the first taiko block",
 		Description: "Relevant tests for the generation of the first L2 block",
 		Run:         firstL2Block,
 	},
