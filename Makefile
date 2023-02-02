@@ -20,7 +20,7 @@ image:
 	@./taiko-image/build-l1-image.sh
 	@./taiko-image/build-client-image.sh
 
-test-client: image build
+test-client:  build
 	@echo "$(shell date) Starting taiko/client simulation"
 	./hive --sim=taiko/client ${HIVEFLAGS}
 
