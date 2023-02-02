@@ -5,17 +5,17 @@ RUN apk add --update gcc musl-dev linux-headers
 # Build the simulator executable, from hive repo root.
 # See context.txt for docker build context change.
 # We use a go.work file to pull in other go modules of the hive repo.
-COPY ./simulators/taiko/rpc/hive.go.work /source/go.work
 COPY ./taiko /source/taiko
-COPY ./simulators/taiko/rpc /source/rpc
+COPY ./simulators/taiko/rpc/* /source/
+COPY ./simulators/taiko/rpc/hive.go.work /source/go.work
 
-WORKDIR /source/rpc
-RUN go build -v .
+WORKDIR /source/
+RUN go build -v -o ./sim .
 
 # Build the simulator run container.
 FROM alpine:latest
 
 COPY --from=builder /source/taiko/config.json .
-COPY --from=builder /source/rpc/rpc .
+COPY --from=builder /source/sim .
 
-ENTRYPOINT ["./rpc"]
+ENTRYPOINT ["./sim"]
