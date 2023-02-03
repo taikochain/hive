@@ -46,6 +46,11 @@ var tests = []*hivesim.TestSpec{
 		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
 		Run:         proposeTxListIncludingInvalidTx,
 	},
+	{
+		Name:        "Failed to propose by ws because there are too many pending transaction",
+		Description: "Total size of pending transactions affects the execution of propose, connected with taiko-geth by ws rpc will fail, when by http will success.",
+		Run:         generateLargeTxLists,
+	},
 }
 
 func main() {
@@ -136,7 +141,7 @@ func syncTaikoBlock(t *hivesim.T) {
 	t.Run(hivesim.TestSpec{
 		Name:        "Cross-synchronized by p2p syncing of taiko engine and L1",
 		Description: "For more complicated synchronization scenarios, first synchronize to latestVerifiedHeight through P2P, and then synchronize through one-by-one, and simulate the driver disconnection in the middle process.",
-		Run:         syncByBothP2PAndOneByOne(env),
+		Run:         crossSync(env),
 	})
 }
 
@@ -180,7 +185,7 @@ func syncByFull(env *taiko.TestEnv) func(*hivesim.T) {
 	}
 }
 
-func syncByBothP2PAndOneByOne(env *taiko.TestEnv) func(*hivesim.T) {
+func crossSync(env *taiko.TestEnv) func(*hivesim.T) {
 	return func(t *hivesim.T) {
 		ctx, d := env.Context, env.Net
 		// 1. start new L2 engine and driver to sync by p2p
@@ -227,12 +232,12 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	l2ethCli, err := l2.EthClient()
 	require.NoError(t, err)
 	for canPropose(t, env, taikoL1) {
-		require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli))
+		require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli, nil))
 		require.NoError(t, prop.ProposeOp(ctx))
 		time.Sleep(10 * time.Millisecond)
 	}
 	// wait error
-	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli))
+	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli, nil))
 	err = prop.ProposeOp(ctx)
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), "L1:tooMany"))
@@ -336,6 +341,38 @@ func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
 	tx, err := taikoL2.Anchor(opts, common.Big0, common.BytesToHash(testutils.RandomBytes(32)))
 	require.NoError(t, err)
 	return tx
+}
+
+func generateLargeTxLists(t *hivesim.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	defer cancel()
+
+	env := taiko.NewTestEnv(ctx, t)
+	env.StartL1L2(taiko.WithELNodeType("full"))
+
+	l2ethCli, err := env.Net.GetL2ELNode(0).EthClient()
+	require.NoError(t, err)
+	// generate some transactions whose total size > wsMessageSizeLimit
+	// wsMessageSizeLimit is defined in go-ethereum/rpc/websocket.go
+	wsMessageSizeLimit := 15 * 1024 * 1024
+	dataSize := 15 * 1024
+	data := []byte(strings.Repeat("x", dataSize))
+	for i := 0; i < wsMessageSizeLimit/dataSize+1; i++ {
+		require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli, data))
+	}
+	// propose by ws will fail
+	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
+	wsProp, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	require.NoError(t, err)
+	err = wsProp.ProposeOp(ctx)
+	require.ErrorContains(t, err, "read limit exceeded")
+
+	// propose by http will success
+	c := taiko.NewProposerConfig(env, l1, l2)
+	c.L2Endpoint = l2.HttpRpcEndpoint()
+	httpProp, err := taiko.NewProposer(t, env, c)
+	require.NoError(t, err)
+	require.NoError(t, httpProp.ProposeOp(ctx))
 }
 
 // runAllTests runs the tests against a client instance.

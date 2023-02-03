@@ -95,7 +95,7 @@ func (v *Vault) CreateAccount(ctx context.Context, client *ethclient.Client, amo
 	address := v.GenerateKey()
 
 	// order the vault to send some ether
-	tx := v.makeFundingTx(address, amount)
+	tx := v.makeFundingTx(address, amount, nil)
 	if err := client.SendTransaction(ctx, tx); err != nil {
 		v.t.Fatalf("unable to send funding transaction: %v", err)
 	}
@@ -131,10 +131,10 @@ func (v *Vault) KeyedTransactor(addr common.Address) *bind.TransactOpts {
 	return opts
 }
 
-func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.Transaction {
+func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int, data []byte) *types.Transaction {
 	var (
 		nonce    = v.nextNonce()
-		gasLimit = uint64(75000)
+		gasLimit = uint64(750000)
 	)
 	tx := types.NewTx(&types.LegacyTx{
 		Nonce:    nonce,
@@ -142,6 +142,7 @@ func (v *Vault) makeFundingTx(recipient common.Address, amount *big.Int) *types.
 		GasPrice: big.NewInt(1),
 		To:       &recipient,
 		Value:    amount,
+		Data:     data,
 	})
 	signer := types.LatestSignerForChainID(v.chainID)
 	signedTx, err := types.SignTx(tx, signer, vaultKey)
@@ -161,9 +162,9 @@ func (v *Vault) nextNonce() uint64 {
 	return nonce
 }
 
-func (v *Vault) SendTestTx(ctx context.Context, client *ethclient.Client) error {
+func (v *Vault) SendTestTx(ctx context.Context, client *ethclient.Client, data []byte) error {
 	address := v.GenerateKey()
-	tx := v.makeFundingTx(address, big.NewInt(params.GWei))
+	tx := v.makeFundingTx(address, big.NewInt(params.Ether), data)
 	if err := client.SendTransaction(ctx, tx); err != nil {
 		return fmt.Errorf("unable to send funding transaction: %v", err)
 	}
