@@ -46,6 +46,7 @@ library LibSharedConfig {
                 initialUncleDelay: 1 seconds, // change for hive test
                 enableTokenomics: false, // change for hive test
                 enablePublicInputsCheck: false, // change for hive test
+                enableProofValidation: false,
                 enableOracleProver: false // change for hive test
             });
     }
