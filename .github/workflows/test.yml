@@ -30,10 +30,10 @@ jobs:
       - name: Start test
         id: test
         env:
-          REPO: ${{ github.event.client_test.repo }}
-          REF: ${{ github.event.client_test.ref }}
-          REF_NAME: ${{ github.event.client_test.ref_name }}
-          HEAD_REF: ${{ github.event.client_test.head_ref }}
+          REPO: ${{ github.event.client_payload.repo }}
+          REF: ${{ github.event.client_payload.ref }}
+          REF_NAME: ${{ github.event.client_payload.ref_name }}
+          HEAD_REF: ${{ github.event.client_payload.head_ref }}
           RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |
           # run test
@@ -48,7 +48,7 @@ jobs:
           cp -r ${{ env.RESULTS_DIR }}/* workspace/logs/
           rm -f ${RESULTS_DIR}
 
-          echo "PR_NUM=$(echo ${{ github.event.client_test.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
+          echo "PR_NUM=$(echo ${{ env.REF }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
           echo "RESULT=failed: ${failed}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${file}"  >> $GITHUB_OUTPUT
 
       - name: Show Some Info
@@ -57,9 +57,9 @@ jobs:
           echo ${{ steps.test.outputs.RESULT }}
 
       - name: Comment taiko-client PR
-        if: (github.event.client_test.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_test.ref,'refs/pull')
+        if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_payload.ref,'refs/pull')
         run: |
-          pr_number=$(echo ${{ github.event.client_test.ref }} | cut -d '/' -f 3)
+          pr_number=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)
           curl -X POST \
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
