@@ -99,7 +99,10 @@ deploy_l1_protocol() {
         git clone --depth=1 https://github.com/taikoxyz/taiko-mono.git ${mono_dir}
     fi
 
-    cp "${workdir}/LibSharedConfig.sol" "${mono_dir}/packages/protocol/contracts/libs/LibSharedConfig.sol"
+    origin_config="${mono_dir}/packages/protocol/contracts/libs/LibSharedConfig.sol"
+    changed_config="${workdir}/LibSharedConfig.sol"
+    sed -f "${workdir}/LibSharedConfig.sed" "${origin_config}" >"${changed_config}"
+    mv "${changed_config}" "${origin_config}"
     cp "${workdir}/LibZKP.sol" "${mono_dir}/packages/protocol/contracts/libs/LibZKP.sol"
 
     cd "${mono_dir}/packages/protocol"
