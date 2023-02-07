@@ -6,6 +6,7 @@ on:
   repository_dispatch:
     types: [start]
   workflow_dispatch:
+  pull_request:
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
@@ -29,7 +30,7 @@ jobs:
       - name: Start test
         id: test
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 7
         env:
           REPO: ${{ github.event.client_payload.repo }}
           REF: ${{ github.event.client_payload.ref }}
@@ -37,25 +38,26 @@ jobs:
           HEAD_REF: ${{ github.event.client_payload.head_ref }}
           RESULTS_DIR: ${{ steps.result.outputs.RESULTS_DIR }}
         run: |
-          # run test
           git checkout taiko
           git pull origin taiko
           make test-client
 
-          # analysis result
-          file=$(basename $(ls ${{ env.RESULTS_DIR }}/*.json))
-          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ env.RESULTS_DIR }}/${file})
+      - name: Analysis Test Result
+        id: analysis
+        run: |
+          file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
+          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
 
-          cp -r ${{ env.RESULTS_DIR }}/* workspace/logs/
-          rm -fr ${RESULTS_DIR}
+          cp -r ${{ steps.result.outputs.RESULTS_DIR }}/* workspace/logs/
+          rm -r ${{ steps.result.outputs.RESULTS_DIR }}
 
-          echo "PR_NUM=$(echo ${{ env.REF }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
+          echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
           echo "RESULT=failed: ${failed}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${file}"  >> $GITHUB_OUTPUT
 
       - name: Show Some Info
         run: |
-          echo PR_NUM: ${{ steps.test.outputs.PR_NUM }}
-          echo RESULT: ${{ steps.test.outputs.RESULT }}
+          echo PR_NUM: ${{ steps.analysis.outputs.PR_NUM }}
+          echo RESULT: ${{ steps.analysis.outputs.RESULT }}
 
       - name: Comment taiko-client PR
         if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_payload.ref,'refs/pull')
@@ -65,4 +67,4 @@ jobs:
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
           https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_test":{"pr_number":${{ steps.test.outputs.PR_NUM }}, "results":"${{ steps.test.outputs.RESULT }}" }}'
+          -d '{"event_type":"comment","client_test":{"pr_number":${{ steps.analysis.outputs.PR_NUM }}, "results":"${{ steps.analysis.outputs.RESULT }}" }}'
