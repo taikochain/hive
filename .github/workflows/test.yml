@@ -47,15 +47,15 @@ jobs:
           failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ env.RESULTS_DIR }}/${file})
 
           cp -r ${{ env.RESULTS_DIR }}/* workspace/logs/
-          rm -f ${RESULTS_DIR}
+          rm -fr ${RESULTS_DIR}
 
           echo "PR_NUM=$(echo ${{ env.REF }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
           echo "RESULT=failed: ${failed}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${file}"  >> $GITHUB_OUTPUT
 
       - name: Show Some Info
         run: |
-          echo ${{ steps.test.outputs.PR_NUM }}
-          echo ${{ steps.test.outputs.RESULT }}
+          echo PR_NUM: ${{ steps.test.outputs.PR_NUM }}
+          echo RESULT: ${{ steps.test.outputs.RESULT }}
 
       - name: Comment taiko-client PR
         if: (github.event.client_payload.repo == 'taikoxyz/taiko-client') && startsWith(github.event.client_payload.ref,'refs/pull')
