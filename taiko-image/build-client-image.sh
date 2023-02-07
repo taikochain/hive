@@ -2,13 +2,15 @@
 
 set -e
 
+debug=false
+
 tmp_dir=/mnt/disks/data/tmp
 
 client_branch="main"
 if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
-    if [[ "${HEAD_REF}" != "" ]]; then
+    if [[ -n "${HEAD_REF}" ]]; then
         client_branch=${HEAD_REF}
-    elif [[ "${REF_NAME}" != "" ]]; then
+    elif [[ -n "${REF_NAME}" ]]; then
         client_branch=${REF_NAME}
     fi
 fi

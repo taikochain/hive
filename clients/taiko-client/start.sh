@@ -83,7 +83,7 @@ FLAGS="$FLAGS --verbosity $HIVE_LOGLEVEL"
 
 case $HIVE_TAIKO_ROLE in
 "driver")
-  echo $HIVE_TAIKO_JWT_SECRET >/jwtsecret
+  echo "$HIVE_TAIKO_JWT_SECRET" >/jwtsecret
   FLAGS="$FLAGS --l2.auth $HIVE_TAIKO_L2_ENGINE_ENDPOINT"
   FLAGS="$FLAGS --l2.throwawayBlockBuilderPrivKey=$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
   FLAGS="$FLAGS --jwtSecret /jwtsecret"

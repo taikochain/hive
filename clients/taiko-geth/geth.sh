@@ -104,28 +104,28 @@ fi
 if [ "$HIVE_NODETYPE" == "snap" ]; then
     FLAGS="$FLAGS --syncmode snap"
 fi
-if [ "$HIVE_NODETYPE" == "" ]; then
+if [ -z "$HIVE_NODETYPE" ]; then
     FLAGS="$FLAGS --syncmode snap"
 fi
 
 # Import clique signing key.
-if [ "$HIVE_CLIQUE_PRIVATEKEY" != "" ]; then
+if [ -n "$HIVE_CLIQUE_PRIVATEKEY" ]; then
     # Create password file.
     echo "Importing clique key..."
     echo "secret" >/geth-password-file.txt
     $geth --nousb account import --password /geth-password-file.txt <(echo "$HIVE_CLIQUE_PRIVATEKEY")
 
     # Ensure password file is used when running geth in mining mode.
-    if [ "$HIVE_MINER" != "" ]; then
+    if [ -n "$HIVE_MINER" ]; then
         FLAGS="$FLAGS --password /geth-password-file.txt --unlock $HIVE_MINER --allow-insecure-unlock"
     fi
 fi
 
 # Configure any mining operation
-if [ "$HIVE_MINER" != "" ] && [ "$HIVE_NODETYPE" != "light" ]; then
+if [ -n "$HIVE_MINER" ] && [ "$HIVE_NODETYPE" != "light" ]; then
     FLAGS="$FLAGS --mine --miner.threads 1 --miner.etherbase $HIVE_MINER"
 fi
-if [ "$HIVE_MINER_EXTRA" != "" ]; then
+if [ -n "$HIVE_MINER_EXTRA" ]; then
     FLAGS="$FLAGS --miner.extradata $HIVE_MINER_EXTRA"
 fi
 FLAGS="$FLAGS --miner.gasprice 16000000000"
@@ -145,11 +145,11 @@ FLAGS="$FLAGS --authrpc.addr=0.0.0.0 --authrpc.port=8551 --authrpc.vhosts=* --au
 # fi
 
 # Configure GraphQL.
-if [ "$HIVE_GRAPHQL_ENABLED" != "" ]; then
+if [ -n "$HIVE_GRAPHQL_ENABLED" ]; then
     FLAGS="$FLAGS --graphql"
 fi
 # used for the graphql to allow submission of unprotected tx
-if [ "$HIVE_ALLOW_UNPROTECTED_TX" != "" ]; then
+if [ -n "$HIVE_ALLOW_UNPROTECTED_TX" ]; then
     FLAGS="$FLAGS --rpc.allow-unprotected-txs"
 fi
 
