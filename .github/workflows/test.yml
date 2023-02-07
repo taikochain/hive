@@ -6,7 +6,6 @@ on:
   repository_dispatch:
     types: [start]
   workflow_dispatch:
-  pull_request:
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
