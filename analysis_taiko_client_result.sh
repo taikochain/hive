@@ -4,7 +4,7 @@ log_dir=$1
 
 for log in "${log_dir}"/*-*.json; do
     if [ ! -f "${log}" ]; then
-        echo "log not exists"
+        echo "log not exists, may be caused by timeout"
         break
     fi
     log_name=$(basename "${log}")
