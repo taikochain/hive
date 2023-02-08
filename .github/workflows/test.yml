@@ -62,4 +62,4 @@ jobs:
           -H "Accept: application/vnd.github.everest-preview+json" \
           -H "Authorization: Bearer ${{secrets.HIVE_RESULT}}" \
           https://api.github.com/repos/taikoxyz/taiko-client/dispatches \
-          -d '{"event_type":"comment","client_test":{"pr_number":${{ steps.analysis.outputs.PR_NUM }}, "results":"${{ steps.analysis.outputs.RESULT }}" }}'
+          -d '{"event_type":"comment","client_payload":{"pr_number":${{ steps.analysis.outputs.PR_NUM }}, "results":"${{ steps.analysis.outputs.RESULT }}" }}'
