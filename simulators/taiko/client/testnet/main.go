@@ -26,31 +26,31 @@ var tests = []*hivesim.TestSpec{
 		Description: "Tests related to the first generated taiko block",
 		Run:         firstTaikoBlock,
 	},
-	// {
-	// 	Name:        "Sync taiko block",
-	// 	Description: "Tests related to the synchronization of Taiko blocks",
-	// 	Run:         syncTaikoBlock,
-	// },
-	// {
-	// 	Name:        "Too many pending blocks block the propose process",
-	// 	Description: "Too many pending blocks will block further proposes",
-	// 	Run:         tooManyPendingBlocks,
-	// },
-	// {
-	// 	Name:        "Propose invalid transaction list bytes",
-	// 	Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
-	// 	Run:         proposeInvalidTxListBytes,
-	// },
-	// {
-	// 	Name:        "Propose transaction list including invalid transactions",
-	// 	Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
-	// 	Run:         proposeTxListIncludingInvalidTx,
-	// },
-	// {
-	// 	Name:        "Failed to propose by ws because there are too many pending transaction",
-	// 	Description: "Total size of pending transactions affects the execution of propose, connected with taiko-geth by ws rpc will fail, when by http will success.",
-	// 	Run:         generateLargeTxLists,
-	// },
+	{
+		Name:        "Sync taiko block",
+		Description: "Tests related to the synchronization of Taiko blocks",
+		Run:         syncTaikoBlock,
+	},
+	{
+		Name:        "Too many pending blocks block the propose process",
+		Description: "Too many pending blocks will block further proposes",
+		Run:         tooManyPendingBlocks,
+	},
+	{
+		Name:        "Propose invalid transaction list bytes",
+		Description: "Commits and proposes an invalid transaction list bytes to TaikoL1 contract.",
+		Run:         proposeInvalidTxListBytes,
+	},
+	{
+		Name:        "Propose transaction list including invalid transactions",
+		Description: "Commits and proposes a validly encoded transaction list which including an invalid transaction.",
+		Run:         proposeTxListIncludingInvalidTx,
+	},
+	{
+		Name:        "Failed to propose by ws because there are too many pending transaction",
+		Description: "Total size of pending transactions affects the execution of propose, connected with taiko-geth by ws rpc will fail, when by http will success.",
+		Run:         generateLargeTxLists,
+	},
 }
 
 func main() {
