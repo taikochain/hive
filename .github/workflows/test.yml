@@ -30,7 +30,7 @@ jobs:
       - name: Start test
         id: test
         continue-on-error: true
-        timeout-minutes: 7
+        timeout-minutes: 10
         env:
           REPO: ${{ github.event.client_payload.repo }}
           REF: ${{ github.event.client_payload.ref }}
@@ -45,14 +45,9 @@ jobs:
       - name: Analysis Test Result
         id: analysis
         run: |
-          file=$(basename $(ls ${{ steps.result.outputs.RESULTS_DIR }}/*.json))
-          failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' ${{ steps.result.outputs.RESULTS_DIR }}/${file})
-
-          cp -r ${{ steps.result.outputs.RESULTS_DIR }}/* workspace/logs/
-          rm -r ${{ steps.result.outputs.RESULTS_DIR }}
-
+          content=$(sh analysis_taiko_client_result.sh ${{ steps.result.outputs.RESULTS_DIR }})
           echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
-          echo "RESULT=failed: ${failed}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${file}"  >> $GITHUB_OUTPUT
+          echo "RESULT=${content}"  >> $GITHUB_OUTPUT
 
       - name: Show Some Info
         run: |
