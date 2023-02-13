@@ -30,7 +30,6 @@ jobs:
       - name: Start test
         id: test
         continue-on-error: true
-        timeout-minutes: 10
         env:
           REPO: ${{ github.event.client_payload.repo }}
           REF: ${{ github.event.client_payload.ref }}

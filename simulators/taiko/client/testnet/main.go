@@ -68,8 +68,10 @@ func main() {
 	hivesim.MustRun(sim, suit)
 }
 
+var defaultTimeout = 10 * time.Minute
+
 func firstTaikoBlock(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
@@ -114,7 +116,7 @@ func VerifyFirstTaikoBlockOnL1(env *taiko.TestEnv) func(*hivesim.T) {
 }
 
 func syncTaikoBlock(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
@@ -216,7 +218,7 @@ func crossSync(env *taiko.TestEnv) func(*hivesim.T) {
 // Since there is no prover, state.LatestVerifiedId is always 0,
 // so you will get an error when you propose the LibConstants.K_MAX_NUM_BLOCKS block
 func tooManyPendingBlocks(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
@@ -252,7 +254,7 @@ func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Clien
 // proposeInvalidTxListBytes commits and proposes an invalid transaction list
 // bytes to TaikoL1 contract.
 func proposeInvalidTxListBytes(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
@@ -284,7 +286,7 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 // proposeTxListIncludingInvalidTx commits and proposes a validly encoded
 // transaction list which including an invalid transaction.
 func proposeTxListIncludingInvalidTx(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
@@ -344,7 +346,7 @@ func generateInvalidTransaction(env *taiko.TestEnv) *types.Transaction {
 }
 
 func generateLargeTxLists(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
