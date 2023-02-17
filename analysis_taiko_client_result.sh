@@ -13,4 +13,4 @@ for log in "${log_dir}"/*-*.json; do
     echo "failed: ${failed}, detail: http://hive.internal.taiko.xyz/?page=v-pills-results-tab&suite=${log_name}"
 done
 
-rm -r "${log_dir}"
+rm -r ${log_dir}
