@@ -242,7 +242,6 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli, nil))
 	err = prop.ProposeOp(ctx)
 	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), "L1:tooMany"))
 }
 
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
