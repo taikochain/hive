@@ -10,7 +10,7 @@ for log in "${log_dir}"/*-*.json; do
     log_name=$(basename "${log}")
     failed=$(jq '.testCases | map_values(.summaryResult.pass) | with_entries(select(.value==false)) | length' "${log}")
     cp -r "${log_dir}"/* workspace/logs/
-    echo "failed: ${failed}, detail: http://hive.a1.taiko.xyz/?page=v-pills-results-tab&suite=${log_name}"
+    echo "failed: ${failed}, detail: http://hive.internal.taiko.xyz/?page=v-pills-results-tab&suite=${log_name}"
 done
 
 rm -r "${log_dir}"
