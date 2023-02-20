@@ -257,12 +257,12 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
-	env.StartL1L2(taiko.WithELNodeType("full"))
+	env.StartSingleNodeNet()
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 	require.NoError(t, err)
-
+	// propose invalid transaction
 	invalidTxListBytes := testutils.RandomBytes(256)
 	meta, commitTx, err := p.CommitTxList(
 		env.Context,
@@ -273,13 +273,10 @@ func proposeInvalidTxListBytes(t *hivesim.T) {
 	require.NoError(t, err)
 	env.GenCommitDelayBlocks(t)
 	require.NoError(t, p.ProposeTxList(env.Context, meta, commitTx, invalidTxListBytes, 1))
+	// new L1 block should be generated.
 	require.NoError(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
-	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
-		if psv.NextBlockID == 2 {
-			return true
-		}
-		return false
-	}))
+	nextBlockIDUpdated(t, l1)
+	verifiedBlockNoChange(t, l1)
 }
 
 // proposeTxListIncludingInvalidTx commits and proposes a validly encoded
@@ -289,36 +286,50 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 	defer cancel()
 
 	env := taiko.NewTestEnv(ctx, t)
-	env.StartL1L2Driver(taiko.WithELNodeType("full"))
+	env.StartSingleNodeNet()
 
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
 	p, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 	require.NoError(t, err)
 
+	// propose invalid transaction
 	invalidTx := generateInvalidTransaction(env)
-
 	txListBytes, err := rlp.EncodeToBytes(types.Transactions{invalidTx})
 	require.NoError(t, err)
-
 	meta, commitTx, err := p.CommitTxList(env.Context, txListBytes, invalidTx.Gas(), 0)
 	require.NoError(t, err)
-
 	env.GenCommitDelayBlocks(t)
-
 	require.NoError(t, p.ProposeTxList(env.Context, meta, commitTx, txListBytes, 1))
-
+	// new L1 block should be generated.
 	require.NoError(t, taiko.WaitHeight(ctx, l1, taiko.GreaterEqual(1)))
+	nextBlockIDUpdated(t, l1)
+	newPendingL2BlockGenerated(t, env, invalidTx)
+	verifiedBlockNoChange(t, l1)
+}
+
+func nextBlockIDUpdated(t *hivesim.T, l1 *taiko.ELNode) {
 	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
 		if psv.NextBlockID == 2 {
 			return true
 		}
 		return false
 	}))
-	l2Eth, err := l2.EthClient()
+}
+
+func newPendingL2BlockGenerated(t *hivesim.T, env *taiko.TestEnv, invalidTx *types.Transaction) {
+	l2Eth, err := env.Net.GetL2ELNode(0).EthClient()
 	require.NoError(t, err)
 	pendingNonce, err := l2Eth.PendingNonceAt(context.Background(), env.Conf.L2.Proposer.Address)
 	require.NoError(t, err)
 	require.NotEqual(t, invalidTx.Nonce(), pendingNonce)
+}
+func verifiedBlockNoChange(t *hivesim.T, l1 *taiko.ELNode) {
+	taikoL1, err := l1.TaikoL1Client()
+	require.NoError(t, err)
+	s, err := rpc.GetProtocolStateVariables(taikoL1, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), s.LatestVerifiedID)
+	require.Equal(t, uint64(0), s.LatestVerifiedHeight)
 }
 
 // generateInvalidTransaction creates a transaction with an invalid nonce to
