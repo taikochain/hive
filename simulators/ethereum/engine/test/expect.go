@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
+	client_types "github.com/ethereum/hive/simulators/ethereum/engine/client/types"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
 )
 
@@ -198,7 +200,9 @@ type NewPayloadResponseExpectObject struct {
 func (tec *TestEngineClient) TestEngineNewPayloadV1(payload *api.ExecutableData) *NewPayloadResponseExpectObject {
 	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
 	defer cancel()
-	status, err := tec.Engine.NewPayloadV1(ctx, payload)
+	edv1 := &client_types.ExecutableDataV1{}
+	edv1.FromExecutableData(payload)
+	status, err := tec.Engine.NewPayloadV1(ctx, edv1)
 	ret := &NewPayloadResponseExpectObject{
 		ExpectEnv: &ExpectEnv{Env: tec.Env},
 		Payload:   payload,
@@ -292,7 +296,7 @@ func (exp *NewPayloadResponseExpectObject) ExpectLatestValidHash(lvh *common.Has
 	}
 }
 
-// GetPayloadV1
+// GetPayload
 type GetPayloadResponseExpectObject struct {
 	*ExpectEnv
 	Payload    api.ExecutableData
@@ -362,6 +366,84 @@ func (exp *GetPayloadResponseExpectObject) ExpectErrorCode(code int) {
 	}
 }
 
+func ComparePayloads(want *api.ExecutableData, got *api.ExecutableData) error {
+	if want == nil || got == nil {
+		if want == nil && got == nil {
+			return nil
+		}
+		return fmt.Errorf("want: %v, got: %v", want, got)
+	}
+
+	if !bytes.Equal(want.ParentHash[:], got.ParentHash[:]) {
+		return fmt.Errorf("unexpected ParentHash: want=%v, got=%v", want.ParentHash, got.ParentHash)
+	}
+
+	if !bytes.Equal(want.FeeRecipient[:], got.FeeRecipient[:]) {
+		return fmt.Errorf("unexpected FeeRecipient: want=%v, got=%v", want.FeeRecipient, got.FeeRecipient)
+	}
+
+	if !bytes.Equal(want.StateRoot[:], got.StateRoot[:]) {
+		return fmt.Errorf("unexpected StateRoot: want=%v, got=%v", want.StateRoot, got.StateRoot)
+	}
+
+	if !bytes.Equal(want.ReceiptsRoot[:], got.ReceiptsRoot[:]) {
+		return fmt.Errorf("unexpected ReceiptsRoot: want=%v, got=%v", want.ReceiptsRoot, got.ReceiptsRoot)
+	}
+
+	if !bytes.Equal(want.Random[:], got.Random[:]) {
+		return fmt.Errorf("unexpected Random: want=%v, got=%v", want.Random, got.Random)
+	}
+
+	if !bytes.Equal(want.BlockHash[:], got.BlockHash[:]) {
+		return fmt.Errorf("unexpected BlockHash: want=%v, got=%v", want.BlockHash, got.BlockHash)
+	}
+
+	if !bytes.Equal(want.LogsBloom, got.LogsBloom) {
+		return fmt.Errorf("unexpected LogsBloom: want=%v, got=%v", want.LogsBloom, got.LogsBloom)
+	}
+
+	if !bytes.Equal(want.ExtraData, got.ExtraData) {
+		return fmt.Errorf("unexpected ExtraData: want=%v, got=%v", want.ExtraData, got.ExtraData)
+	}
+
+	if want.Number != got.Number {
+		return fmt.Errorf("unexpected Number: want=%d, got=%d", want.Number, got.Number)
+	}
+
+	if want.GasLimit != got.GasLimit {
+		return fmt.Errorf("unexpected GasLimit: want=%d, got=%d", want.GasLimit, got.GasLimit)
+	}
+
+	if want.GasUsed != got.GasUsed {
+		return fmt.Errorf("unexpected GasUsed: want=%d, got=%d", want.GasUsed, got.GasUsed)
+	}
+
+	if want.Timestamp != got.Timestamp {
+		return fmt.Errorf("unexpected Timestamp: want=%d, got=%d", want.Timestamp, got.Timestamp)
+	}
+
+	if want.BaseFeePerGas.Cmp(got.BaseFeePerGas) != 0 {
+		return fmt.Errorf("unexpected BaseFeePerGas: want=%d, got=%d", want.BaseFeePerGas, got.BaseFeePerGas)
+	}
+
+	if err := CompareTransactions(want.Transactions, got.Transactions); err != nil {
+		return err
+	}
+
+	if err := CompareWithdrawals(want.Withdrawals, got.Withdrawals); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (exp *GetPayloadResponseExpectObject) ExpectPayload(expectedPayload *api.ExecutableData) {
+	exp.ExpectNoError()
+	if err := ComparePayloads(expectedPayload, &exp.Payload); err != nil {
+		exp.Fatalf("FAIL (%s): Unexpected payload returned on EngineGetPayloadV%d: %v", exp.TestName, exp.Version, err)
+	}
+}
+
 func (exp *GetPayloadResponseExpectObject) ExpectPayloadParentHash(expectedParentHash common.Hash) {
 	exp.ExpectNoError()
 	if exp.Payload.ParentHash != expectedParentHash {
@@ -387,6 +469,181 @@ func (exp *GetPayloadResponseExpectObject) ExpectTimestamp(expectedTimestamp uin
 	exp.ExpectNoError()
 	if exp.Payload.Timestamp != expectedTimestamp {
 		exp.Fatalf("FAIL (%s): Unexpected timestamp for payload on EngineGetPayloadV%d: %v, expected=%v", exp.TestName, exp.Version, exp.Payload.Timestamp, expectedTimestamp)
+	}
+}
+
+// GetPayloadBodies
+type GetPayloadBodiesResponseExpectObject struct {
+	*ExpectEnv
+	PayloadBodies []*client_types.ExecutionPayloadBodyV1
+	BlockValue    *big.Int
+	Version       int
+	Error         error
+	ErrorCode     int
+}
+
+func (tec *TestEngineClient) TestEngineGetPayloadBodiesByRangeV1(start uint64, count uint64) *GetPayloadBodiesResponseExpectObject {
+	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
+	defer cancel()
+	payloadBodies, err := tec.Engine.GetPayloadBodiesByRangeV1(ctx, start, count)
+	ret := &GetPayloadBodiesResponseExpectObject{
+		ExpectEnv:     &ExpectEnv{Env: tec.Env},
+		PayloadBodies: payloadBodies,
+		Version:       1,
+		BlockValue:    nil,
+		Error:         err,
+	}
+	if err, ok := err.(rpc.Error); ok {
+		ret.ErrorCode = err.ErrorCode()
+	}
+	return ret
+}
+
+func (tec *TestEngineClient) TestEngineGetPayloadBodiesByHashV1(hashes []common.Hash) *GetPayloadBodiesResponseExpectObject {
+	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
+	defer cancel()
+	payloadBodies, err := tec.Engine.GetPayloadBodiesByHashV1(ctx, hashes)
+	ret := &GetPayloadBodiesResponseExpectObject{
+		ExpectEnv:     &ExpectEnv{Env: tec.Env},
+		PayloadBodies: payloadBodies,
+		Version:       1,
+		BlockValue:    nil,
+		Error:         err,
+	}
+	if err, ok := err.(rpc.Error); ok {
+		ret.ErrorCode = err.ErrorCode()
+	}
+	return ret
+}
+
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectNoError() {
+	if exp.Error != nil {
+		exp.Fatalf("FAIL (%s): Expected no error on EngineGetPayloadBodiesV%d: error=%v", exp.TestName, exp.Version, exp.Error)
+	}
+}
+
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectError() {
+	if exp.Error == nil {
+		exp.Fatalf("FAIL (%s): Expected error on EngineGetPayloadBodiesV%d: payload=%v", exp.TestName, exp.Version, exp.PayloadBodies)
+	}
+}
+
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectErrorCode(code int) {
+	exp.ExpectError()
+	if exp.ErrorCode != code {
+		exp.Fatalf("FAIL (%s): Expected error code on EngineGetPayloadBodiesV%d: want=%d, got=%d", exp.TestName, exp.Version, code, exp.ErrorCode)
+	}
+}
+
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectPayloadBodiesCount(count uint64) {
+	exp.ExpectNoError()
+	if exp.PayloadBodies == nil {
+		exp.Fatalf("FAIL (%s): Expected payload bodies list count on EngineGetPayloadBodiesV%d: want=%d, got=nil", exp.TestName, exp.Version, count)
+	}
+	if uint64(len(exp.PayloadBodies)) != count {
+		exp.Fatalf("FAIL (%s): Expected payload bodies list count on EngineGetPayloadBodiesV%d: want=%d, got=%d", exp.TestName, exp.Version, count, len(exp.PayloadBodies))
+	}
+}
+
+func CompareTransactions(want [][]byte, got [][]byte) error {
+	if len(want) != len(got) {
+		return fmt.Errorf("incorrect tx length: want=%d, got=%d", len(want), len(got))
+	}
+
+	for i, a_tx := range want {
+		b_tx := got[i]
+		if !bytes.Equal(a_tx, b_tx) {
+			return fmt.Errorf("tx %d not equal: want=%x, got=%x", i, a_tx, b_tx)
+		}
+	}
+
+	return nil
+}
+
+func CompareWithdrawal(want *types.Withdrawal, got *types.Withdrawal) error {
+	if want == nil || got == nil {
+		if want == nil && got != nil {
+			got, _ := json.MarshalIndent(got, "", " ")
+			return fmt.Errorf("want=null, got=%s", got)
+		} else if want != nil && got == nil {
+			want, _ := json.MarshalIndent(want, "", " ")
+			return fmt.Errorf("want=%s, got=null", want)
+		}
+		return nil
+	}
+	if want.Amount != got.Amount ||
+		!bytes.Equal(want.Address[:], got.Address[:]) ||
+		want.Index != got.Index ||
+		want.Validator != got.Validator {
+		want, _ := json.MarshalIndent(want, "", " ")
+		got, _ := json.MarshalIndent(got, "", " ")
+		return fmt.Errorf("want=%s, got=%s", want, got)
+	}
+	return nil
+}
+
+func CompareWithdrawals(want []*types.Withdrawal, got []*types.Withdrawal) error {
+	if want == nil || got == nil {
+		if want == nil && got == nil {
+			return nil
+		}
+		if want == nil && got != nil {
+			got, _ := json.MarshalIndent(got, "", " ")
+			return fmt.Errorf("incorrect withdrawals: want: null, got: %s", got)
+		} else {
+			want, _ := json.MarshalIndent(want, "", " ")
+			return fmt.Errorf("incorrect withdrawals: want: %s, got: null", want)
+		}
+
+	}
+
+	if len(want) != len(got) {
+		return fmt.Errorf("incorrect withdrawals length: want=%d, got=%d", len(want), len(got))
+	}
+
+	for i, a_w := range want {
+		b_w := got[i]
+		if err := CompareWithdrawal(a_w, b_w); err != nil {
+			return fmt.Errorf("withdrawal %d not equal: %v", i, err)
+		}
+	}
+
+	return nil
+}
+
+func ComparePayloadBodies(want *client_types.ExecutionPayloadBodyV1, got *client_types.ExecutionPayloadBodyV1) error {
+	if want == nil || got == nil {
+		if want == nil && got == nil {
+			return nil
+		}
+		return fmt.Errorf("want: %v, got: %v", want, got)
+	}
+
+	if err := CompareTransactions(want.Transactions, got.Transactions); err != nil {
+		return err
+	}
+
+	if err := CompareWithdrawals(want.Withdrawals, got.Withdrawals); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectPayloadBody(index uint64, payloadBody *client_types.ExecutionPayloadBodyV1) {
+	exp.ExpectNoError()
+	if exp.PayloadBodies == nil {
+		exp.Fatalf("FAIL (%s): Expected payload body in list on EngineGetPayloadBodiesV%d, but list is nil", exp.TestName, exp.Version)
+	}
+	if index >= uint64(len(exp.PayloadBodies)) {
+		exp.Fatalf("FAIL (%s): Expected payload body in list on EngineGetPayloadBodiesV%d, list is smaller than index: want=%s", exp.TestName, exp.Version, index)
+	}
+
+	checkItem := exp.PayloadBodies[index]
+
+	if err := ComparePayloadBodies(payloadBody, checkItem); err != nil {
+		exp.Fatalf("FAIL (%s): Unexpected payload body on EngineGetPayloadBodiesV%d at index %d: %v", exp.TestName, exp.Version, index, err)
+
 	}
 }
 
@@ -634,6 +891,9 @@ func (exp *BalanceResponseExpectObject) ExpectBalanceEqual(expBalance *big.Int) 
 type StorageResponseExpectObject struct {
 	*ExpectEnv
 	Call      string
+	Account   common.Address
+	Key       common.Hash
+	Number    *big.Int
 	Storage   []byte
 	Error     error
 	ErrorCode int
@@ -646,6 +906,9 @@ func (tec *TestEngineClient) TestStorageAt(account common.Address, key common.Ha
 	ret := &StorageResponseExpectObject{
 		ExpectEnv: &ExpectEnv{Env: tec.Env},
 		Call:      "StorageAt",
+		Account:   account,
+		Key:       key,
+		Number:    number,
 		Storage:   storage,
 		Error:     err,
 	}
@@ -667,7 +930,7 @@ func (exp *StorageResponseExpectObject) ExpectBigIntStorageEqual(expBigInt *big.
 	bigInt.SetBytes(exp.Storage)
 	if ((bigInt == nil || expBigInt == nil) && bigInt != expBigInt) ||
 		(bigInt != nil && expBigInt != nil && bigInt.Cmp(expBigInt) != 0) {
-		exp.Fatalf("FAIL (%s): Unexpected storage on %s: %v, expected=%v", exp.TestName, exp.Call, bigInt, expBigInt)
+		exp.Fatalf("FAIL (%s): Unexpected storage on %s (addr=%s, key=%s, block=%d): got=%d, expected=%d", exp.TestName, exp.Call, exp.Account, exp.Key, exp.Number, bigInt, expBigInt)
 	}
 }
 

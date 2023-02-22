@@ -1,10 +1,11 @@
-import { $ } from '../extlib/jquery.module.js'
+import { $ } from 'jquery'
 import { html, nav, format, loader } from './utils.js'
-import * as app from './app.js'
+import * as routes from './routes.js'
+import * as common from './common.js'
 
-function navigate() {
-    app.init();
-    
+$(document).ready(function () {
+    common.updateHeader();
+
     // Check for line number in hash.
     var line = null;
     if (window.location.hash.substr(1, 1) == "L") {
@@ -26,7 +27,7 @@ function navigate() {
             showError("Invalid parameters! Missing 'suitefile' or 'testid' in URL.");
             return;
         }
-        fetchTestLog(app.resultsRoot + suiteFile, testIndex, line);
+        fetchTestLog(routes.resultsRoot + suiteFile, testIndex, line);
         return;
     }
 
@@ -41,44 +42,43 @@ function navigate() {
 
     // Show default text because nothing was loaded.
     showText(document.getElementById("exampletext").innerHTML);
-}
-
-$(document).ready(navigate);
+})
 
 // setHL sets the highlight on a line number.
 function setHL(num, scroll) {
     // out with the old
-    $(".highlighted").removeClass("highlighted");
+    $('.highlighted').removeClass("highlighted");
     if (!num) {
         return;
     }
 
-    let contentArea = $('#file-content');
-    let gutter = $('#gutter');
-    let numElem = gutter.children().eq(num - 1);
+    let contentArea = document.getElementById('file-content');
+    let gutter = document.getElementById('gutter');
+    let numElem = gutter.children[num - 1];
     if (!numElem) {
         console.error("invalid line number:", num);
         return;
     }
     // in with the new
-    let lineElem = contentArea.children().eq(num - 1);
-    numElem.addClass("highlighted");
-    lineElem.addClass("highlighted");
+    let lineElem = contentArea.children[num - 1];
+    $(numElem).addClass("highlighted");
+    $(lineElem).addClass("highlighted");
     if (scroll) {
-        numElem[0].scrollIntoView();
+        numElem.scrollIntoView();
     }
 }
 
 // showLinkBack displays the link to the test viewer.
 function showLinkBack(suiteID, suiteName, testID) {
-    let linkText = "Back to test suite: " + suiteName;
-    var linkURL;
+    var text, url;
     if (testID) {
-        linkURL = app.route.testInSuite(suiteID, suiteName, testID);
+        text = "Back to test " + testID + " in suite ‘" + suiteName + "’";
+        url = routes.testInSuite(suiteID, suiteName, testID);
     } else {
-        linkURL = app.route.suite(suiteID, suiteName);
+        text = "Back to test suite ‘" + suiteName + "’";
+        url = routes.suite(suiteID, suiteName);
     }
-    $('#link-back').html(html.get_link(linkURL, linkText));
+    $('#link-back').html(html.get_link(url, text));
 }
 
 function showTitle(type, title) {
@@ -118,16 +118,6 @@ function showText(text) {
         appendLine(contentArea, gutter, i + 1, lines[i]);
     }
 
-    // Text showing done, now let's wire up the gutter-clicking
-    // so if a line number is clicked,
-    // 1. Previous highlight is removed
-    // 2. The line is highlighted,
-    // 3. The id is added to the URL hash
-    $(".num").on('click', function(obj) {
-        setHL($(this).attr("line"), false);
-        history.replaceState(null, null, "#" + $(this).attr("id"));
-    });
-
     // Set meta-info.
     let meta = $("#meta");
     meta.text(lines.length + " Lines, " + format.units(text.length));
@@ -142,21 +132,28 @@ function appendLine(contentArea, gutter, number, text) {
     num.setAttribute("id", "L" + number);
     num.setAttribute("class", "num");
     num.setAttribute("line", number.toString());
+    num.addEventListener('click', lineNumberClicked);
     gutter.appendChild(num);
 
-    let line = document.createElement("span")
+    let line = document.createElement("pre")
     line.innerText = text + "\n";
     contentArea.appendChild(line);
 }
 
+function lineNumberClicked() {
+    setHL($(this).attr("line"), false);
+    history.replaceState(null, null, "#" + $(this).attr("id"));
+}
+
 // fetchFile loads up a new file to view
 function fetchFile(url, line /* optional jump to line */ ) {
+    let resultsRE = new RegExp("^" + routes.resultsRoot);
     $.ajax({
         xhr: loader.newXhrWithProgressBar,
         url: url,
         dataType: "text",
         success: function(data) {
-            let title = url.replace("^"+app.resultsRoot, '');
+            let title = url.replace(resultsRE, '');
             showTitle(null, title);
             showFileContent(data, url);
             setHL(line, true);

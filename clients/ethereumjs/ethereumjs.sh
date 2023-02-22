@@ -44,17 +44,15 @@
 #  - HIVE_GRAPHQL_ENABLED         enables graphql on port 8545
 #  - HIVE_LES_SERVER              set to '1' to enable LES server
 
-
 # Immediately abort the script on any error encountered
 set -e
 
 ethereumjs="node /ethereumjs-monorepo/packages/client/dist/bin/cli.js"
-FLAGS="--gethGenesis ./genesis.json --rpc --rpcEngine --saveReceipts --rpcEnginePort 8551 --ws --logLevel debug"
-
+FLAGS="--gethGenesis ./genesis.json --rpc --rpcEngine --saveReceipts --rpcEnginePort 8551 --ws --logLevel debug --rpcDebug --transports rlpx --isSingleNode"
 
 # Configure the chain.
 mv /genesis.json /genesis-input.json
-jq -f /mapper.jq /genesis-input.json > /genesis.json
+jq -f /mapper.jq /genesis-input.json >/genesis.json
 
 # Dump genesis
 echo "Supplied genesis state:"
@@ -64,7 +62,7 @@ cat /genesis.json
 if [ "$HIVE_CLIQUE_PRIVATEKEY" != "" ]; then
     # Create password file.
     echo "Importing clique key..."
-    echo "$HIVE_CLIQUE_PRIVATEKEY" > ./private_key.txt
+    echo "$HIVE_CLIQUE_PRIVATEKEY" >./private_key.txt
     # Ensure password file is used when running ethereumjs in mining mode.
     if [ "$HIVE_MINER" != "" ]; then
         FLAGS="$FLAGS --mine --unlock ./private_key.txt --minerCoinbase $HIVE_MINER"
@@ -73,6 +71,14 @@ fi
 
 if [ "$HIVE_TERMINAL_TOTAL_DIFFICULTY" != "" ]; then
     FLAGS="$FLAGS --jwt-secret ./jwtsecret"
+fi
+
+# Load the test chain if present
+echo "Loading initial blockchain..."
+if [ -f /chain.rlp ]; then
+    FLAGS="$FLAGS --loadBlocksFromRlp=/chain.rlp"
+else
+    echo "Warning: chain.rlp not found."
 fi
 
 FLAGS="$FLAGS --bootnodes=$HIVE_BOOTNODE"

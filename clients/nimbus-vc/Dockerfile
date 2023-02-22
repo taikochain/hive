@@ -2,19 +2,23 @@
 
 FROM debian:buster-slim AS build
 
-RUN apt-get update \
- && apt-get install -y --fix-missing build-essential make git libpcre3-dev librocksdb-dev curl \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ARG branch=unstable
 
-ENV NPROC=2
+RUN apt-get update &&
+    apt-get install -y --fix-missing build-essential make git libpcre3-dev librocksdb-dev curl &&
+    apt-get clean &&
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN git clone --depth 1 --branch unstable https://github.com/status-im/nimbus-eth2.git \
- && cd nimbus-eth2 \
- && make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" V=1 update
+RUN git clone --recurse-submodules --depth 1 --branch "${branch}" \
+    https://github.com/status-im/nimbus-eth2.git
 
-RUN cd nimbus-eth2 && \
-    make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" nimbus_validator_client && \
+WORKDIR /nimbus-eth2
+
+RUN NPROC=$(nproc)
+make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" V=1 update
+
+RUN NPROC=$(nproc)
+make -j${NPROC} NIMFLAGS="--parallelBuild:${NPROC}" nimbus_validator_client &&
     mv build/nimbus_validator_client /usr/bin/
 
 # --------------------------------- #
@@ -23,10 +27,9 @@ RUN cd nimbus-eth2 && \
 
 FROM debian:buster-slim AS deploy
 
-RUN apt-get update \
- && apt-get install -y librocksdb-dev bash curl jq\
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update &&
+    apt-get install -y librocksdb-dev bash curl jq && apt-get clean &&
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=build /usr/bin/nimbus_validator_client /usr/bin/nimbus_validator_client
 
@@ -37,6 +40,6 @@ RUN chmod +x /nimbus_vc.sh
 ADD nimbus_version.sh /nimbus_version.sh
 RUN chmod +x /nimbus_version.sh
 
-RUN /nimbus_version.sh > /version.txt
+RUN /nimbus_version.sh >/version.txt
 
 ENTRYPOINT ["/nimbus_vc.sh"]
