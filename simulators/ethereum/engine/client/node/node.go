@@ -36,6 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
+	client_types "github.com/ethereum/hive/simulators/ethereum/engine/client/types"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
 	"github.com/ethereum/hive/simulators/ethereum/engine/helper"
 )
@@ -689,9 +690,16 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 }
 
 // Engine API
-func (n *GethNode) NewPayloadV1(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
+func (n *GethNode) NewPayloadV1(ctx context.Context, pl *client_types.ExecutableDataV1) (beacon.PayloadStatusV1, error) {
+	ed := pl.ToExecutableData()
+	n.latestPayloadSent = &ed
+	resp, err := n.api.NewPayloadV1(ed)
+	n.latestPayloadStatusReponse = &resp
+	return resp, err
+}
+func (n *GethNode) NewPayloadV2(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
 	n.latestPayloadSent = pl
-	resp, err := n.api.NewPayloadV1(*pl)
+	resp, err := n.api.NewPayloadV2(*pl)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
@@ -732,6 +740,14 @@ func (n *GethNode) GetPayloadV2(ctx context.Context, payloadId *beacon.PayloadID
 		return beacon.ExecutableData{}, nil, err
 	}
 	return *p.ExecutionPayload, p.BlockValue, err
+}
+
+func (n *GethNode) GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*client_types.ExecutionPayloadBodyV1, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (n *GethNode) GetPayloadBodiesByHashV1(ctx context.Context, hashes []common.Hash) ([]*client_types.ExecutionPayloadBodyV1, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 // Eth JSON RPC
@@ -791,6 +807,16 @@ func (n *GethNode) HeaderByNumber(ctx context.Context, number *big.Int) (*types.
 
 func (n *GethNode) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	return n.eth.APIBackend.SendTx(ctx, tx)
+}
+
+func (n *GethNode) SendTransactions(ctx context.Context, txs []*types.Transaction) []error {
+	for _, tx := range txs {
+		err := n.eth.APIBackend.SendTx(ctx, tx)
+		if err != nil {
+			return []error{err}
+		}
+	}
+	return nil
 }
 
 func (n *GethNode) getStateDB(ctx context.Context, blockNumber *big.Int) (*state.StateDB, error) {
@@ -887,6 +913,19 @@ func (n *GethNode) GetNextAccountNonce(testCtx context.Context, account common.A
 		PreviousNonce: nonce,
 	}
 	return nonce, nil
+}
+
+func (n *GethNode) UpdateNonce(testCtx context.Context, account common.Address, newNonce uint64) error {
+	// First get the current head of the client where we will send the tx
+	head, err := n.eth.APIBackend.BlockByNumber(testCtx, LatestBlockNumber)
+	if err != nil {
+		return err
+	}
+	n.accTxInfoMap[account] = &AccountTransactionInfo{
+		PreviousBlock: head.Hash(),
+		PreviousNonce: newNonce,
+	}
+	return nil
 }
 
 func (n *GethNode) PostRunVerifications() error {

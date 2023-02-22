@@ -1,38 +1,41 @@
-import '../extlib/bootstrap.module.js'
-import '../extlib/dataTables.module.js'
-import { $ } from '../extlib/jquery.module.js'
-import { html, format, nav } from './utils.js'
-import * as app from './app.js'
+import 'datatables.net'
+import 'datatables.net-bs5'
+import 'datatables.net-responsive'
+import 'datatables.net-responsive-bs5'
+import { $ } from 'jquery'
 
-$(document).ready(function() {
-	app.init();
-	
+import { html, format } from './utils.js'
+import * as routes from './routes.js'
+import * as common from './common.js'
+
+$(document).ready(function () {
+	common.updateHeader();
+
+	$('#loading').show();
 	console.log("Loading file list...");
-	$.ajax("listing.jsonl", {
-		success: showFileListing,
+	$.ajax({
+		type: 'GET',
+		url: "listing.jsonl",
+		cache: false,
+		success: function(data) {
+			$('#page-text').show();
+			showFileListing(data);
+		},
 		failure: function(status, err) {
 			alert(err);
 		},
+		complete: function () {
+			$('#loading').hide();
+		},
 	});
-});
-
-function resultStats(fails, success, total) {
-	f = parseInt(fails), s = parseInt(success);
-	t = parseInt(total);
-	f = isNaN(f) ? "?" : f;
-	s = isNaN(s) ? "?" : s;
-	t = isNaN(t) ? "?" : t;
-	return '<b><span class="text-danger">' + f +
-		'</span>&nbsp;:&nbsp;<span class="text-success">' + s +
-		'</span> &nbsp;/&nbsp;' + t + '</b>';
-}
+})
 
 function linkToSuite(suiteID, suiteName, linkText) {
-	let url = app.route.suite(suiteID, suiteName);
+	let url = routes.suite(suiteID, suiteName);
 	return html.get_link(url, linkText);
 }
 
-function showFileListing(data, error) {
+function showFileListing(data) {
 	console.log("Got file list")
 	// the data is jsonlines
 	/*
@@ -56,36 +59,56 @@ function showFileListing(data, error) {
 		if (!elem) {
 			return;
 		}
-		suites.push(JSON.parse(elem));
+		let suite = JSON.parse(elem);
+		suite.start = new Date(suite.start);
+		suites.push(suite);
 	});
 
 	filetable = $("#filetable").DataTable({
 		data: suites,
 		pageLength: 50,
 		autoWidth: false,
+		responsive: {
+			details: {
+				type: 'none',
+				display: $.fn.dataTable.Responsive.display.childRowImmediate,
+				renderer: function (table, rowIdx, columns) {
+					var output = '<div class="responsive-overflow">';
+					columns.forEach(function (col, i) {
+						if (col.hidden) {
+							output += '<span class="responsive-overflow-col">'
+							output += col.data;
+							output += '</span> ';
+						}
+					});
+					output += '</div>';
+					return output;
+				},
+			},
+		},
 		order: [[0, 'desc']],
 		columns: [
 			{
-				title: "Start time",
+				title: "🕒",
 				data: "start",
 				type: "date",
-				width: "11em",
+				width: "10em",
 				render: function(v, type) {
-					if (type === 'display') {
-						return new Date(v).toLocaleString();
+					if (type === 'display' || type == 'filter') {
+						return v.toLocaleString();
 					}
-					return v;
+					return v.toISOString();
 				},
 			},
 			{
 				title: "Suite",
 				data: "name",
-				width: "10em",
+				width: "14em",
 			},
 			{
 				title: "Clients",
 				data: "clients",
-				width: "30%",
+				width: "auto",
 				render: function(data) {
 					return data.join(", ")
 				},
@@ -93,7 +116,8 @@ function showFileListing(data, error) {
 			{
 				title: "Status",
 				data: null,
-				width: "9em",
+				width: "5.5em",
+				className: "suite-status-column",
 				render: function(data) {
 					if (data.fails > 0) {
 						let prefix = data.timeout ? "Timeout" : "Fail";
@@ -105,7 +129,7 @@ function showFileListing(data, error) {
 			{
 				title: "",
 				data: null,
-				width: "180px",
+				width: "8.5em",
 				orderable: false,
 				render: function(data) {
 					let loadText = "Load (" + format.units(data.size) + ")";

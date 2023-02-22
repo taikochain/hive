@@ -1,4 +1,4 @@
-import { $ } from '../extlib/jquery.module.js'
+import { $ } from 'jquery'
 
 export let html = {
 	// encode does HTML-encoding/escaping.
@@ -181,7 +181,7 @@ export let loader = {
 		}
 
 		var animated = false;
-		if (typeof loading == "boolean") {
+		if (typeof loadState == "boolean") {
 			loadState = 1.0;
 			animated = true;
 		}
