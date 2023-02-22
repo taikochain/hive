@@ -14,9 +14,7 @@ library LibZKP {
     function verify(
         address plonkVerifier,
         bytes calldata zkproof,
-        bytes32 blockHash,
-        address prover,
-        bytes32 txListHash
+        bytes32 instance
     ) internal view returns (bool verified) {
        return true;
     }
