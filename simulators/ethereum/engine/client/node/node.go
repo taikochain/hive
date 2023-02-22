@@ -703,12 +703,6 @@ func (n *GethNode) NewPayloadV2(ctx context.Context, pl *beacon.ExecutableData) 
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
-func (n *GethNode) NewPayloadV2(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
-	n.latestPayloadSent = pl
-	resp, err := n.api.NewPayloadV2(*pl)
-	n.latestPayloadStatusReponse = &resp
-	return resp, err
-}
 
 func (n *GethNode) ForkchoiceUpdatedV1(ctx context.Context, fcs *beacon.ForkchoiceStateV1, payload *beacon.PayloadAttributes) (beacon.ForkChoiceResponse, error) {
 	n.latestFcUStateSent = fcs
