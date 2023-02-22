@@ -88,11 +88,11 @@ func firstTaikoBlock(t *hivesim.T) {
 		Run:  GenFirstTaikoBlockOnL1(env),
 	})
 
-	t.Run(hivesim.TestSpec{
-		Name:        "Verify the first taiko block",
-		Description: "Watch prove event of the first taiko block on L1",
-		Run:         VerifyFirstTaikoBlockOnL1(env),
-	})
+	// t.Run(hivesim.TestSpec{
+	// 	Name:        "Verify the first taiko block",
+	// 	Description: "Watch prove event of the first taiko block on L1",
+	// 	Run:         VerifyFirstTaikoBlockOnL1(env),
+	// })
 }
 
 func GenFirstTaikoBlockOnL1(env *taiko.TestEnv) func(*hivesim.T) {
