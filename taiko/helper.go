@@ -137,7 +137,7 @@ func WaitProveEvent(ctx context.Context, n *ELNode, hash common.Hash) error {
 	}
 }
 
-func WaitStateChange(n *ELNode, f func(*bindings.ProtocolStateVariables) bool) error {
+func WaitStateChange(n *ELNode, f func(*bindings.LibUtilsStateVariables) bool) error {
 	taikoL1, err := n.TaikoL1Client()
 	if err != nil {
 		return err

@@ -19,7 +19,7 @@ import (
 // callContractTest uses the generated ABI binding to call methods in the
 // pre-deployed contract.
 func callContractTest(t *LegacyTestEnv) {
-	contract, err := taiko.NewContractCaller(predeployedContractAddr, t.Eth)
+	contract, err := NewContractCaller(predeployedContractAddr, t.Eth)
 	if err != nil {
 		t.Fatalf("Unable to instantiate contract caller: %v", err)
 	}

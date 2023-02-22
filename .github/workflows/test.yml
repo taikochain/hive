@@ -44,7 +44,8 @@ jobs:
       - name: Analysis Test Result
         id: analysis
         run: |
-          content=$(sh analysis_taiko_client_result.sh ${{ steps.result.outputs.RESULTS_DIR }})
+          pwd
+          content=$(sh scripts/analysis_taiko_client_result.sh ${{ steps.result.outputs.RESULTS_DIR }})
           echo "PR_NUM=$(echo ${{ github.event.client_payload.ref }} | cut -d '/' -f 3)" >> $GITHUB_OUTPUT
           echo "RESULT=${content}"  >> $GITHUB_OUTPUT
 
