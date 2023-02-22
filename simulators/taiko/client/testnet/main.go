@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
+	berror "github.com/taikoxyz/taiko-client/bindings/error"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 	"github.com/taikoxyz/taiko-client/testutils"
 )
@@ -71,7 +72,7 @@ func main() {
 var defaultTimeout = 10 * time.Minute
 
 func firstTaikoBlock(t *hivesim.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*defaultTimeout)
 	defer cancel()
 	env := taiko.NewTestEnv(ctx, t)
 	env.StartSingleNodeNet()
@@ -109,7 +110,7 @@ func VerifyFirstTaikoBlockOnL1(env *taiko.TestEnv) func(*hivesim.T) {
 		blockHash, err := taiko.GetBlockHashByNumber(ctx, l2, common.Big1, true)
 		require.NoError(t, err)
 		require.NoError(t, taiko.WaitProveEvent(ctx, l1, blockHash))
-		require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
+		require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.LibUtilsStateVariables) bool {
 			return psv.LatestVerifiedHeight == 1
 		}))
 	}
@@ -242,12 +243,16 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	require.NoError(t, env.L2Vault.SendTestTx(ctx, l2ethCli, nil))
 	err = prop.ProposeOp(ctx)
 	require.Error(t, err)
+	// check revert reason
+	matchErr, err := berror.CheckExpectRevertReason("L1_TOO_MANY()", err)
+	require.NoError(t, err)
+	require.True(t, matchErr)
 }
 
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
 	l1State, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 	require.NoError(t, err)
-	return l1State.NextBlockID < l1State.LatestVerifiedID+env.TaikoConf.MaxNumBlocks.Uint64()
+	return l1State.NextBlockId < l1State.LatestVerifiedId+env.TaikoConf.MaxNumBlocks.Uint64()
 }
 
 // proposeInvalidTxListBytes commits and proposes an invalid transaction list
@@ -308,8 +313,8 @@ func proposeTxListIncludingInvalidTx(t *hivesim.T) {
 }
 
 func nextBlockIDUpdated(t *hivesim.T, l1 *taiko.ELNode) {
-	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.ProtocolStateVariables) bool {
-		if psv.NextBlockID == 2 {
+	require.NoError(t, taiko.WaitStateChange(l1, func(psv *bindings.LibUtilsStateVariables) bool {
+		if psv.NextBlockId == 2 {
 			return true
 		}
 		return false
@@ -328,7 +333,7 @@ func verifiedBlockNoChange(t *hivesim.T, l1 *taiko.ELNode) {
 	require.NoError(t, err)
 	s, err := rpc.GetProtocolStateVariables(taikoL1, nil)
 	require.NoError(t, err)
-	require.Equal(t, uint64(0), s.LatestVerifiedID)
+	require.Equal(t, uint64(0), s.LatestVerifiedId)
 	require.Equal(t, uint64(0), s.LatestVerifiedHeight)
 }
 

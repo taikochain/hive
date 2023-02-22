@@ -6,7 +6,6 @@ replace github.com/ethereum/go-ethereum v1.10.26 => github.com/taikoxyz/taiko-ge
 
 require (
 	github.com/ethereum/go-ethereum v1.10.26
-	github.com/ethereum/hive v0.0.0-20220727121216-02ad57aaf9c1
 	github.com/kr/pretty v0.3.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -42,12 +41,12 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/taikoxyz/taiko-client v0.2.3 // indirect
+	github.com/taikoxyz/taiko-client v0.4.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.5.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b // indirect
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	gopkg.in/inconshreveable/log15.v2 v2.0.0-20200109203555-b30bc20e4fd1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
