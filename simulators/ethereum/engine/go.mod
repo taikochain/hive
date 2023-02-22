@@ -6,6 +6,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/ethereum/hive v0.0.0-20230124094404-5b561920e19b
 	github.com/golang-jwt/jwt/v4 v4.4.3
+	golang.org/x/exp v0.0.0-20230126173853-a67bb567ff2e
 )
 
 require (
@@ -61,12 +62,12 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
-replace github.com/ethereum/go-ethereum v1.10.26 => github.com/lightclient/go-ethereum v1.10.10-0.20230116085521-6ab6d738866f
+replace github.com/ethereum/go-ethereum v1.10.26 => github.com/ethereum/go-ethereum v1.10.24-0.20230127123926-a63875bf4d7f
