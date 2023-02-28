@@ -16,4 +16,5 @@ jobs:
           scopes: |
             rpc
             client
+            ci
           requireScope: true
