@@ -50,8 +50,10 @@
 #  - HIVE_TAIKO_ROLE                                 role of node
 #  - HIVE_TAIKO_L1_CHAIN_ID                          l1 chain id
 #  - HIVE_TAIKO_JWT_SECRET                           jwt secret used by driver and taiko geth
-#  - HIVE_TAIKO_L1_RPC_ENDPOINT                      rpc endpoint of the l1 node
-#  - HIVE_TAIKO_L2_RPC_ENDPOINT                      rpc endpoint of the l2 node
+#  - HIVE_TAIKO_L1_HTTP_ENDPOINT                     http endpoint of the l1 node
+#  - HIVE_TAIKO_L2_HTTP_ENDPOINT                     http endpoint of the l2 node
+#  - HIVE_TAIKO_L1_WS_ENDPOINT                       ws endpoint of the l1 node
+#  - HIVE_TAIKO_L2_WS_ENDPOINT                       ws endpoint of the l2 node
 #  - HIVE_TAIKO_L1_ROLLUP_ADDRESS                    rollup address of the l1 node
 #  - HIVE_TAIKO_L2_ROLLUP_ADDRESS                    rollup address of the l2 node
 
@@ -77,13 +79,14 @@
 
 set -e
 
-FLAGS="--l1.ws $HIVE_TAIKO_L1_RPC_ENDPOINT --l2.ws $HIVE_TAIKO_L2_RPC_ENDPOINT"
+FLAGS="--l1.ws $HIVE_TAIKO_L1_WS_ENDPOINT"
 FLAGS="$FLAGS --taikoL1 $HIVE_TAIKO_L1_ROLLUP_ADDRESS  --taikoL2 $HIVE_TAIKO_L2_ROLLUP_ADDRESS"
 FLAGS="$FLAGS --verbosity $HIVE_LOGLEVEL"
 
 case $HIVE_TAIKO_ROLE in
 "driver")
   echo "$HIVE_TAIKO_JWT_SECRET" >/jwtsecret
+  FLAGS="$FLAGS --l2.ws $HIVE_TAIKO_L2_WS_ENDPOINT"
   FLAGS="$FLAGS --l2.auth $HIVE_TAIKO_L2_ENGINE_ENDPOINT"
   FLAGS="$FLAGS --l2.throwawayBlockBuilderPrivKey=$HIVE_TAIKO_THROWAWAY_BLOCK_BUILDER_PRIVATE_KEY"
   FLAGS="$FLAGS --jwtSecret /jwtsecret"
@@ -92,12 +95,16 @@ case $HIVE_TAIKO_ROLE in
   fi
   ;;
 "prover")
+  FLAGS="$FLAGS --l2.ws $HIVE_TAIKO_L2_WS_ENDPOINT"
+  FLAGS="$FLAGS --l1.http $HIVE_TAIKO_L1_HTTP_ENDPOINT"
+  FLAGS="$FLAGS --l2.http $HIVE_TAIKO_L2_HTTP_ENDPOINT"
   FLAGS="$FLAGS --zkevmRpcdEndpoint=ws://127.0.0.1:18545"
   FLAGS="$FLAGS --zkevmRpcdParamsPath=12345"
   FLAGS="$FLAGS --l1.proverPrivKey=$HIVE_TAIKO_PROVER_PRIVATE_KEY"
   FLAGS="$FLAGS --dummy"
   ;;
 "proposer")
+  FLAGS="$FLAGS --l2.http $HIVE_TAIKO_L2_HTTP_ENDPOINT"
   FLAGS="$FLAGS --l1.proposerPrivKey=$HIVE_TAIKO_PROPOSER_PRIVATE_KEY"
   FLAGS="$FLAGS --l2.suggestedFeeRecipient=$HIVE_TAIKO_SUGGESTED_FEE_RECIPIENT"
   FLAGS="$FLAGS --proposeInterval=$HIVE_TAIKO_PROPOSE_INTERVAL"

@@ -64,18 +64,34 @@ func WithRole(role string) NodeOption {
 	}
 }
 
-func WithL1Endpoint(url string) NodeOption {
+func WithL1HTTPEndpoint(url string) NodeOption {
 	return func(n *Node) {
 		n.opts = append(n.opts, hivesim.Params{
-			envTaikoL1RPCEndpoint: url,
+			envTaikoL1HTTPEndpoint: url,
 		})
 	}
 }
 
-func WithL2Endpoint(url string) NodeOption {
+func WithL2HTTPEndpoint(url string) NodeOption {
 	return func(n *Node) {
 		n.opts = append(n.opts, hivesim.Params{
-			envTaikoL2RPCEndpoint: url,
+			envTaikoL2HTTPEndpoint: url,
+		})
+	}
+}
+
+func WithL1WSEndpoint(url string) NodeOption {
+	return func(n *Node) {
+		n.opts = append(n.opts, hivesim.Params{
+			envTaikoL1WSEndpoint: url,
+		})
+	}
+}
+
+func WithL2WSEndpoint(url string) NodeOption {
+	return func(n *Node) {
+		n.opts = append(n.opts, hivesim.Params{
+			envTaikoL2WSEndpoint: url,
 		})
 	}
 }
