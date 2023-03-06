@@ -4,3 +4,4 @@ workspace
 # build output
 /hive
 mainnet.json
+tmp

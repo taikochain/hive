@@ -3,8 +3,8 @@
 set -e
 
 debug=false
-
-tmp_dir=/mnt/disks/data/tmp
+project_dir=$(realpath "$(dirname $0)/..")
+tmp_dir=${project_dir}/tmp
 
 client_branch="main"
 if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then

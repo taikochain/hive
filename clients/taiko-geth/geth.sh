@@ -160,5 +160,5 @@ FLAGS="$FLAGS --nat=none"
 FLAGS="$FLAGS --taiko --allow-insecure-unlock"
 # taiko part end
 
-echo "Running go-ethereum with flags $FLAGS"
+echo "Running taiko-geth with flags $FLAGS"
 $geth $FLAGS
