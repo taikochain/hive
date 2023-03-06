@@ -8,7 +8,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/ethereum/hive v0.0.0-20221028130025-473d051e991a
 	github.com/stretchr/testify v1.8.1
-	github.com/taikoxyz/taiko-client v0.4.0
+	github.com/taikoxyz/taiko-client v0.4.1-0.20230305144634-8c772f4e1085
 	golang.org/x/sync v0.1.0
 )
 
