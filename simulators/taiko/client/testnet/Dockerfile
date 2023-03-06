@@ -16,6 +16,6 @@ RUN go build -v -o ./sim .
 FROM alpine:latest
 
 COPY --from=builder /source/taiko/config.json .
-COPY --from=builder /source/sim .
+COPY --from=builder /source/simulators/taiko/client/testnet/sim .
 
 ENTRYPOINT ["./sim"]
