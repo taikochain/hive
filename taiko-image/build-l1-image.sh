@@ -6,14 +6,11 @@ debug=false
 project_dir=$(realpath "$(dirname $0)/..")
 tmp_dir=${project_dir}/tmp
 
-workdir=$(
-    cd "$(dirname $0)"
-    pwd
-)
+workdir=${project_dir}/taiko-image
 
 l1_container_name=taiko-l1
 l2_container_name=taiko-l2
-taiko_config_file="${workdir}/../taiko/config.json"
+taiko_config_file="${project_dir}/taiko/config.json"
 
 l1_network_id=$(jq -r .l1_network_id "${taiko_config_file}")
 l1_clique_period=$(jq -r .l1_clique_period "${taiko_config_file}")
