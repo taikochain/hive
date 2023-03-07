@@ -7,16 +7,15 @@ RUN apk add --update gcc musl-dev linux-headers
 # We use a go.work file to pull in other go modules of the hive repo.
 
 COPY ./taiko /source/taiko
-COPY ./simulators/taiko/client/testnet/* /source/
-COPY ./simulators/taiko/client/testnet/hive.go.work /source/go.work
+COPY ./simulators/taiko/client/testnet /source/simulators/taiko/client/testnet
 
-WORKDIR /source/
+WORKDIR /source/simulators/taiko/client/testnet
 RUN go build -v -o ./sim .
 
 # Build the simulator run container.
 FROM alpine:latest
 
 COPY --from=builder /source/taiko/config.json .
-COPY --from=builder /source/sim .
+COPY --from=builder /source/simulators/taiko/client/testnet/sim .
 
 ENTRYPOINT ["./sim"]

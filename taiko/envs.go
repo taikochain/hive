@@ -27,8 +27,10 @@ const (
 	envTaikoRole            = "HIVE_TAIKO_ROLE"
 	envTaikoL1ChainID       = "HIVE_TAIKO_L1_CHAIN_ID"
 	envTaikoJWTSecret       = "HIVE_TAIKO_JWT_SECRET"
-	envTaikoL1RPCEndpoint   = "HIVE_TAIKO_L1_RPC_ENDPOINT"
-	envTaikoL2RPCEndpoint   = "HIVE_TAIKO_L2_RPC_ENDPOINT"
+	envTaikoL1HTTPEndpoint  = "HIVE_TAIKO_L1_HTTP_ENDPOINT"
+	envTaikoL2HTTPEndpoint  = "HIVE_TAIKO_L2_HTTP_ENDPOINT"
+	envTaikoL1WSEndpoint    = "HIVE_TAIKO_L1_WS_ENDPOINT"
+	envTaikoL2WSEndpoint    = "HIVE_TAIKO_L2_WS_ENDPOINT"
 	envTaikoL1RollupAddress = "HIVE_TAIKO_L1_ROLLUP_ADDRESS"
 	envTaikoL2RollupAddress = "HIVE_TAIKO_L2_ROLLUP_ADDRESS"
 

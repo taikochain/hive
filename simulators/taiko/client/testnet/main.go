@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/hive/taiko"
 	"github.com/stretchr/testify/require"
 	"github.com/taikoxyz/taiko-client/bindings"
-	berror "github.com/taikoxyz/taiko-client/bindings/error"
+	"github.com/taikoxyz/taiko-client/bindings/encoding"
 	"github.com/taikoxyz/taiko-client/pkg/rpc"
 	"github.com/taikoxyz/taiko-client/testutils"
 )
@@ -244,9 +244,9 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	err = prop.ProposeOp(ctx)
 	require.Error(t, err)
 	// check revert reason
-	matchErr, err := berror.CheckExpectRevertReason("L1_TOO_MANY()", err)
+	err = encoding.TryParsingCustomError(err)
 	require.NoError(t, err)
-	require.True(t, matchErr)
+	require.Contains(t, err.Error(), "L1_TOO_MANY")
 }
 
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
