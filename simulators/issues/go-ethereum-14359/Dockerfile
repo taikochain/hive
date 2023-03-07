@@ -5,7 +5,7 @@
 #
 # Details in https://github.com/ethereum/go-ethereum/issues/14359
 #
-# The test starts up a network of two nodesand checks that they can successfully
+# The test starts up a network of two nodes and checks that they can successfully
 # connect to each other.
 FROM alpine:latest
 
