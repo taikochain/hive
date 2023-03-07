@@ -61,20 +61,21 @@
 set -e
 
 geth \
+  --datadir /data/l1-node \
   --nodiscover \
   --gcmode archive \
-  --networkid "$HIVE_NETWORK_ID" \
+  --networkid "$HIVE_TAIKO_L1_CHAIN_ID" \
   --http \
   --http.addr 0.0.0.0 \
-  --http.vhosts l1_geth \
   --http.vhosts=* \
-  --http.api debug,eth,net,web3,txpool,miner \
+  --http.corsdomain '*' \
+  --http.api admin,debug,eth,miner,net,txpool,web3 \
   --ws \
   --ws.addr 0.0.0.0 \
   --ws.origins '*' \
-  --ws.api debug,eth,net,web3,txpool,miner \
+  --ws.api admin,debug,eth,miner,net,txpool,web3 \
   --allow-insecure-unlock \
-  --password /dev/null \
+  --password /host/private_key_pwd.txt \
   --unlock 0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39 \
   --verbosity 2 \
   --mine \

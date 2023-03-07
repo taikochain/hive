@@ -15,7 +15,7 @@ if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
     fi
 fi
 
-build_client_image() {
+function build_client_image() {
     if [[ "${debug}" == "true" ]]; then
         client_dir=$(
             cd ../taiko-client
