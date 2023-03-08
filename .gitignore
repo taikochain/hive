@@ -5,3 +5,4 @@ workspace
 /hive
 mainnet.json
 tmp
+taiko-image/l1/genesis.json
