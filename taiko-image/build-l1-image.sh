@@ -3,16 +3,16 @@
 set -e
 
 debug=false
-project_dir=$(realpath "$(dirname $0)/..")
+project_dir=$(realpath "$(dirname "$0")/..")
 tmp_dir=${project_dir}/tmp
 work_dir=${project_dir}/taiko-image
 
 function delete_container() {
-    docker container rm -f $1 >/dev/null
+    docker container rm -f "$1" >/dev/null
 }
 
 function delete_image() {
-    docker image rm -f $1 >/dev/null
+    docker image rm -f "$1" >/dev/null
 }
 
 function print() {
@@ -25,18 +25,18 @@ l2_container_name=taiko-l2
 function get_hive_config() {
     print "Get hive test config ..."
     local hive_config="${project_dir}/taiko/config.json"
-    l1_network_id=$(jq -r .l1_network_id ${hive_config})
-    l2_network_id=$(jq -r .l2_network_id ${hive_config})
-    jwt_secret=$(jq -r .jwt_secret ${hive_config})
+    l1_network_id=$(jq -r .l1_network_id "${hive_config}")
+    l2_network_id=$(jq -r .l2_network_id "${hive_config}")
+    jwt_secret=$(jq -r .jwt_secret "${hive_config}")
     l1_clique_period=$(jq -r .l1_clique_period "${hive_config}")
     private_key=$(jq -r .deploy_private_key "${hive_config}")
     l1_deploy_address=$(jq -r .deploy_address "${hive_config}")
 
-    print "\tl1_network_id:" ${l1_network_id}
-    print "\tl2_network_id:" ${l2_network_id}
-    print "\tjwt_secret:" ${jwt_secret}
-    print "\tl1_clique_period:" ${l1_clique_period}
-    print "\tprivate_key:" ${private_key}
+    print "\tl1_network_id:" "${l1_network_id}"
+    print "\tl2_network_id:" "${l2_network_id}"
+    print "\tjwt_secret:" "${jwt_secret}"
+    print "\tl1_clique_period:" "${l1_clique_period}"
+    print "\tprivate_key:" "${private_key}"
 }
 
 function wait_l2_up() {
@@ -97,7 +97,7 @@ function start_l1_container() {
         -e HIVE_TAIKO_L1_CHAIN_ID="${l1_network_id}" \
         -p 18545:8545 ${image_name})
 
-    print "\tContainer ID:" ${build_container}
+    print "\tContainer ID:" "${build_container}"
 }
 
 mono_dir="${tmp_dir}/taiko-mono"
@@ -118,9 +118,9 @@ change_protocol() {
     jq ".config.chainId=${l1_network_id}" "${origin}" | jq ".config.clique.period=${l1_clique_period}" >"${changed}"
 }
 
-download_protocol() {
+download_protocol_repo() {
     if [[ "${debug}" == "true" ]]; then
-        print "In debug mode, do not download taiko-mono"
+        print "In debug mode, do not download taiko-mono repo"
         return
     fi
 
@@ -130,10 +130,10 @@ download_protocol() {
     change_protocol
 
     if [ ! -f "${protocol_dir}/bin/solc" ]; then
-        ${protocol_dir}/scripts/download_solc.sh
+        "${protocol_dir}"/scripts/download_solc.sh
     fi
 
-    cd ${protocol_dir} && pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile && cd -
+    cd "${protocol_dir}" && pnpm install && K_CHAIN_ID=${l2_network_id} pnpm compile && cd -
 }
 
 deploy_protocol() {
@@ -154,7 +154,7 @@ deploy_protocol() {
     FLAGS="$FLAGS --confirmations 1"
 
     print "\tDeploy L1 rollup contacts with flags $FLAGS"
-    cd ${protocol_dir} && LOG_LEVEL=debug npx hardhat deploy_L1 $FLAGS && cd -
+    cd "${protocol_dir}" && LOG_LEVEL=debug npx hardhat deploy_L1 $FLAGS && cd -
 
     docker cp "${protocol_dir}/deployments/${network}_L1.json" "${l1_container_name}:/mainnet.json"
 
@@ -168,7 +168,7 @@ build_l1_image() {
 }
 
 get_hive_config
-download_protocol
+download_protocol_repo
 start_l1_container
 deploy_protocol
 build_l1_image

@@ -53,7 +53,7 @@ func Roles(t *hivesim.T, clientDefs []*hivesim.ClientDefinition) *ClientsByRole 
 func NewProposerConfig(env *TestEnv, l1, l2 *ELNode) *proposer.Config {
 	return &proposer.Config{
 		L1Endpoint:              l1.WsRpcEndpoint(),
-		L2Endpoint:              l2.WsRpcEndpoint(),
+		L2Endpoint:              l2.HttpRpcEndpoint(),
 		TaikoL1Address:          l1.deploy.rollupAddress,
 		TaikoL2Address:          l2.deploy.rollupAddress,
 		L1ProposerPrivKey:       env.Conf.L2.Proposer.PrivateKey,

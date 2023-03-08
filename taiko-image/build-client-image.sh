@@ -3,34 +3,42 @@
 set -e
 
 debug=false
-project_dir=$(realpath "$(dirname $0)/..")
+project_dir=$(realpath "$(dirname "$0")/..")
 tmp_dir=${project_dir}/tmp
+work_dir=${project_dir}/taiko-image
 
 client_branch="main"
-if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
-    if [[ -n "${HEAD_REF}" ]]; then
-        client_branch=${HEAD_REF}
-    elif [[ -n "${REF_NAME}" ]]; then
-        client_branch=${REF_NAME}
+
+function choose_client_branch() {
+    if [[ "${REPO}" == "taikoxyz/taiko-client" ]]; then
+        if [[ -n "${HEAD_REF}" ]]; then
+            client_branch=${HEAD_REF}
+        elif [[ -n "${REF_NAME}" ]]; then
+            client_branch=${REF_NAME}
+        fi
     fi
-fi
+    echo "Current branch:" "${client_branch}"
+}
+
+client_dir="${tmp_dir}/taiko-client"
+
+function download_client_repo() {
+    if [[ "${debug}" == "true" ]]; then
+        print "In debug mode, do not download taiko-client repo"
+        return
+    fi
+    rm -fr "${client_dir}"
+    git clone https://github.com/taikoxyz/taiko-client.git "${client_dir}"
+}
 
 function build_client_image() {
-    if [[ "${debug}" == "true" ]]; then
-        client_dir=$(
-            cd ../taiko-client
-            pwd
-        )
-    else
-        client_dir="${tmp_dir}/taiko-client"
-        rm -fr "${client_dir}"
-        git clone https://github.com/taikoxyz/taiko-client.git "${client_dir}"
-    fi
     cd "${client_dir}"
     git checkout "${client_branch}"
     docker build -t taiko-client:local .
-    cd -
+    cd "${work_dir}"
     echo "Success to build taiko-client image"
 }
 
+choose_client_branch
+download_client_repo
 build_client_image

@@ -244,9 +244,7 @@ func tooManyPendingBlocks(t *hivesim.T) {
 	err = prop.ProposeOp(ctx)
 	require.Error(t, err)
 	// check revert reason
-	err = encoding.TryParsingCustomError(err)
-	require.NoError(t, err)
-	require.Contains(t, err.Error(), "L1_TOO_MANY")
+	require.ErrorContains(t, encoding.TryParsingCustomError(err), "L1_TOO_MANY_BLOCKS")
 }
 
 func canPropose(t *hivesim.T, env *taiko.TestEnv, taikoL1 *bindings.TaikoL1Client) bool {
@@ -379,17 +377,9 @@ func generateLargeTxLists(t *hivesim.T) {
 	}
 	// propose by ws will fail
 	l1, l2 := env.Net.GetL1ELNode(0), env.Net.GetL2ELNode(0)
-	wsProp, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
+	prop, err := taiko.NewProposer(t, env, taiko.NewProposerConfig(env, l1, l2))
 	require.NoError(t, err)
-	err = wsProp.ProposeOp(ctx)
-	require.ErrorContains(t, err, "read limit exceeded")
-
-	// propose by http will success
-	c := taiko.NewProposerConfig(env, l1, l2)
-	c.L2Endpoint = l2.HttpRpcEndpoint()
-	httpProp, err := taiko.NewProposer(t, env, c)
-	require.NoError(t, err)
-	require.NoError(t, httpProp.ProposeOp(ctx))
+	require.NoError(t, prop.ProposeOp(ctx))
 }
 
 // runAllTests runs the tests against a client instance.
